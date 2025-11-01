@@ -1,0 +1,4 @@
+DirectoryIndex index.php
+
+# Route any non-existent paths to index.php (Apache 2.4+)
+FallbackResource /index.php
