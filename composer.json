@@ -14,6 +14,7 @@
   },
   "scripts": {
     "start": "php -S localhost:8080 -t public",
-    "db:init": "php bin/init-db.php"
+    "db:init": "php bin/init-db.php",
+    "db:seed-rebelle": "php bin/seed-rebelle.php"
   }
 }
