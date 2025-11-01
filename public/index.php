@@ -131,6 +131,144 @@ $app->get('/', function (Request $request, Response $response): Response {
 	return $response->withHeader('Content-Type', 'text/html');
 });
 
+// List translations with optional filters: app, macro (exact), q (search)
+$app->get('/api/translations', function (Request $request, Response $response): Response {
+	try {
+		$pdo = db();
+		$q = $request->getQueryParams();
+		$where = [];
+		$params = [];
+
+		if (isset($q['macro']) && $q['macro'] !== '') {
+			$where[] = 'doio_macro = :macro';
+			$params[':macro'] = (string)$q['macro'];
+		}
+		if (array_key_exists('app', $q)) {
+			// app filter supports empty string meaning NULL
+			if ($q['app'] === '' || $q['app'] === null) {
+				$where[] = 'app IS NULL';
+			} else {
+				$where[] = 'app = :app';
+				$params[':app'] = (string)$q['app'];
+			}
+		}
+		if (isset($q['q']) && $q['q'] !== '') {
+			$where[] = '(doio_macro LIKE :qq OR human_label LIKE :qq)';
+			$params[':qq'] = '%' . (string)$q['q'] . '%';
+		}
+
+		$sql = 'SELECT id, doio_macro, app, human_label FROM translations';
+		if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
+		$sql .= ' ORDER BY COALESCE(app, ""), doio_macro';
+		$stmt = $pdo->prepare($sql);
+		$stmt->execute($params);
+		$rows = $stmt->fetchAll();
+		return json($response, ['translations' => $rows]);
+	} catch (Throwable $e) {
+		return error($response, 'Failed to list translations', 500, ['details' => $e->getMessage()]);
+	}
+});
+
+// Upsert translations: accepts single object or array of objects
+// Body shape: { doio_macro: string, human_label: string, app?: string|null }
+$app->post('/api/translations', function (Request $request, Response $response): Response {
+	try {
+		$pdo = db();
+		$raw = (string)$request->getBody();
+		$data = json_decode($raw, true);
+		if ($data === null || $data === false) return error($response, 'Invalid JSON body', 400);
+		$items = is_assoc($data) ? [$data] : (array)$data;
+
+		$sel = $pdo->prepare('SELECT id FROM translations WHERE doio_macro = :m AND ((:a IS NULL AND app IS NULL) OR app = :a) LIMIT 1');
+		$ins = $pdo->prepare('INSERT INTO translations (doio_macro, app, human_label) VALUES (:m, :a, :h)');
+		$upd = $pdo->prepare('UPDATE translations SET human_label = :h WHERE id = :id');
+
+		$result = [];
+		$pdo->beginTransaction();
+		foreach ($items as $item) {
+			if (!is_array($item)) continue;
+			$macro = trim((string)($item['doio_macro'] ?? ''));
+			$label = trim((string)($item['human_label'] ?? ''));
+			$appVal = array_key_exists('app', $item) ? ( ($item['app'] === '' || $item['app'] === null) ? null : (string)$item['app'] ) : null;
+			if ($macro === '' || $label === '') continue;
+
+			$sel->execute([':m'=>$macro, ':a'=>$appVal]);
+			$row = $sel->fetch();
+			if ($row) {
+				$upd->execute([':h'=>$label, ':id'=>$row['id']]);
+				$id = (int)$row['id'];
+			} else {
+				$ins->execute([':m'=>$macro, ':a'=>$appVal, ':h'=>$label]);
+				$id = (int)$pdo->lastInsertId();
+			}
+			$result[] = ['id'=>$id, 'doio_macro'=>$macro, 'app'=>$appVal, 'human_label'=>$label];
+		}
+		$pdo->commit();
+		return json($response, ['ok'=>true, 'items'=>$result], 201);
+	} catch (Throwable $e) {
+		if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
+		return error($response, 'Failed to upsert translations', 500, ['details'=>$e->getMessage()]);
+	}
+});
+
+// Update a translation by id (partial update allowed)
+$app->put('/api/translations/{id}', function (Request $request, Response $response, array $args): Response {
+	$id = (int)($args['id'] ?? 0);
+	if ($id <= 0) return error($response, 'Invalid id', 400);
+	try {
+		$pdo = db();
+		$row = $pdo->query('SELECT id, doio_macro, app, human_label FROM translations WHERE id = '.$id.' LIMIT 1')->fetch();
+		if (!$row) return error($response, 'Translation not found', 404);
+
+		$raw = (string)$request->getBody();
+		$body = json_decode($raw, true);
+		if (!is_array($body)) return error($response, 'Invalid JSON body', 400);
+
+		// Determine new values (fallback to existing if not provided)
+		$newMacro = array_key_exists('doio_macro', $body) ? trim((string)$body['doio_macro']) : (string)$row['doio_macro'];
+		$newLabel = array_key_exists('human_label', $body) ? trim((string)$body['human_label']) : (string)$row['human_label'];
+		$newApp = array_key_exists('app', $body)
+			? (($body['app'] === '' || $body['app'] === null) ? null : (string)$body['app'])
+			: ($row['app'] !== null ? (string)$row['app'] : null);
+
+		if ($newMacro === '' || $newLabel === '') return error($response, 'doio_macro and human_label cannot be empty', 422);
+
+		// Conflict check: another row with same (macro, app-nullness)
+		$sel = $pdo->prepare('SELECT id FROM translations WHERE doio_macro = :m AND ((:a IS NULL AND app IS NULL) OR app = :a) LIMIT 1');
+		$sel->execute([':m'=>$newMacro, ':a'=>$newApp]);
+		$exists = $sel->fetch();
+		if ($exists && (int)$exists['id'] !== $id) {
+			return error($response, 'A translation with the same doio_macro and app already exists', 409, ['existingId'=>(int)$exists['id']]);
+		}
+
+		$upd = $pdo->prepare('UPDATE translations SET doio_macro = :m, app = :a, human_label = :h WHERE id = :id');
+		$upd->execute([':m'=>$newMacro, ':a'=>$newApp, ':h'=>$newLabel, ':id'=>$id]);
+		return json($response, ['id'=>$id, 'doio_macro'=>$newMacro, 'app'=>$newApp, 'human_label'=>$newLabel]);
+	} catch (Throwable $e) {
+		return error($response, 'Failed to update translation', 500, ['details'=>$e->getMessage()]);
+	}
+});
+
+// Delete a translation by id
+$app->delete('/api/translations/{id}', function (Request $request, Response $response, array $args): Response {
+	$id = (int)($args['id'] ?? 0);
+	if ($id <= 0) return error($response, 'Invalid id', 400);
+	try {
+		$pdo = db();
+		$stmt = $pdo->prepare('DELETE FROM translations WHERE id = :id');
+		$stmt->execute([':id'=>$id]);
+		if ($stmt->rowCount() === 0) return error($response, 'Translation not found', 404);
+		return json($response, ['ok'=>true, 'deleted'=>$id]);
+	} catch (Throwable $e) {
+		return error($response, 'Failed to delete translation', 500, ['details'=>$e->getMessage()]);
+	}
+});
+
+// Helper to detect associative arrays
+function is_assoc($arr): bool {
+	if (!is_array($arr)) return false;
+	return array_keys($arr) !== range(0, count($arr) - 1);
+}
 // List profiles
 $app->get('/api/profiles', function (Request $request, Response $response): Response {
 	try {
