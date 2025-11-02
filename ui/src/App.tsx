@@ -79,7 +79,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className="p-4">
+    <div className="p-4 max-w-[1024px] mx-auto">
       <div className="flex items-center gap-3">
         <h1 className="m-0 text-2xl font-semibold flex-1">DOIO Macro Browser</h1>
         <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={()=>setShowSetupPanel(s=>!s)}>
