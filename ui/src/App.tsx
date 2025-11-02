@@ -55,10 +55,7 @@ export default function App() {
       .catch(() => setFrames(null))
   }, [profileId])
 
-  // Open setup panel automatically if there are no profiles
-  useEffect(() => {
-    if (profiles.length === 0) setShowSetupPanel(true)
-  }, [profiles.length])
+  // Setup panel default is hidden; user can toggle it open via the header button
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -74,11 +71,11 @@ export default function App() {
       <div style={{ display:'flex', alignItems:'center', gap:12 }}>
         <h1 style={{ marginTop: 0, marginBottom: 0, flex: '1 1 auto' }}>DOIO Macro Browser</h1>
         <button onClick={()=>setShowSetupPanel(s=>!s)}>
-          {showSetupPanel || profiles.length === 0 ? 'Hide Setup' : 'Setup'}
+          {showSetupPanel ? 'Hide Setup' : 'Setup'}
         </button>
       </div>
 
-      {(showSetupPanel || profiles.length === 0) && (
+      {showSetupPanel && (
         <OnboardingPanel
           profiles={profiles}
           onCreated={(p:any)=>{
