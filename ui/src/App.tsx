@@ -56,6 +56,18 @@ export default function App() {
   }, [profileId])
 
   // Setup panel default is hidden; user can toggle it open via the header button
+  // Persist the toggle in localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('showSetupPanel')
+      if (raw != null) setShowSetupPanel(JSON.parse(raw))
+    } catch {}
+  }, [])
+  useEffect(() => {
+    try {
+      localStorage.setItem('showSetupPanel', JSON.stringify(showSetupPanel))
+    } catch {}
+  }, [showSetupPanel])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -70,7 +82,7 @@ export default function App() {
     <div className="p-4">
       <div className="flex items-center gap-3">
         <h1 className="m-0 text-2xl font-semibold flex-1">DOIO Macro Browser</h1>
-        <button className="px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50" onClick={()=>setShowSetupPanel(s=>!s)}>
+        <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={()=>setShowSetupPanel(s=>!s)}>
           {showSetupPanel ? 'Hide Setup' : 'Setup'}
         </button>
       </div>
@@ -107,22 +119,22 @@ export default function App() {
           setSelectedProfileId={setProfileId}
         />
       )}
-      {busy && <p className="text-gray-600">{busy}</p>}
+      {busy && <p className="text-gray-600 dark:text-slate-400">{busy}</p>}
       {notice && <p className="text-green-700">{notice}</p>}
       {loading && <p>Loading profiles…</p>}
       {error && <p className="text-red-600">Error: {error}</p>}
       {!!profiles.length && (
         <div className="flex gap-2 items-center">
           <label htmlFor="profile">Profile:</label>
-          <select className="border rounded px-2 py-1" id="profile" value={profileId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setProfileId(Number(e.target.value))}>
+          <select className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" id="profile" value={profileId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setProfileId(Number(e.target.value))}>
             {profiles.map((p: any) => (
               <option key={p.id} value={p.id}>{p.name} · {p.app}</option>
             ))}
           </select>
           <div className="ml-auto flex items-center gap-2">
-            <button className="px-2 py-1 rounded border" onClick={()=>setLayer(l => (l + 3) % 4)}>&larr;</button>
+            <button className="px-2 py-1 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={()=>setLayer(l => (l + 3) % 4)}>&larr;</button>
             <span className="px-2">Layer {layer}</span>
-            <button className="px-2 py-1 rounded border" onClick={()=>setLayer(l => (l + 1) % 4)}>&rarr;</button>
+            <button className="px-2 py-1 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={()=>setLayer(l => (l + 1) % 4)}>&rarr;</button>
           </div>
         </div>
       )}
@@ -219,26 +231,26 @@ function OnboardingPanel({
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3 mb-4 bg-gray-50">
+    <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-3 mb-4 bg-gray-50 dark:bg-slate-800">
       <h2 className="mt-0 text-lg">Setup</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <h3 className="mt-0 text-base">Create Profile</h3>
           <div className="grid gap-2 max-w-[420px]">
             <label className="grid gap-1">
-              <span className="text-xs text-gray-600">Name</span>
-              <input className="border rounded px-2 py-1" value={name} onChange={e=>setName(e.target.value)} placeholder="Rebelle Painting" />
+              <span className="text-xs text-gray-600 dark:text-slate-400">Name</span>
+              <input className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" value={name} onChange={e=>setName(e.target.value)} placeholder="Rebelle Painting" />
             </label>
             <label className="grid gap-1">
-              <span className="text-xs text-gray-600">App</span>
-              <input className="border rounded px-2 py-1" value={app} onChange={e=>setApp(e.target.value)} placeholder="Rebelle" />
+              <span className="text-xs text-gray-600 dark:text-slate-400">App</span>
+              <input className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" value={app} onChange={e=>setApp(e.target.value)} placeholder="Rebelle" />
             </label>
             <div className="flex gap-2 items-center">
-              <button className="px-3 py-1.5 rounded border disabled:opacity-50" disabled={!canCreate} onClick={createProfile}>Create</button>
+              <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50" disabled={!canCreate} onClick={createProfile}>Create</button>
               {!!profiles.length && (
                 <>
-                  <span className="text-gray-500">or select existing:</span>
-                  <select className="border rounded px-2 py-1" value={selectedProfileId ?? ''} onChange={e=>setSelectedProfileId(Number(e.target.value))}>
+                  <span className="text-gray-500 dark:text-slate-400">or select existing:</span>
+                  <select className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" value={selectedProfileId ?? ''} onChange={e=>setSelectedProfileId(Number(e.target.value))}>
                     {profiles.map(p => <option key={p.id} value={p.id}>{p.name} · {p.app}</option>)}
                   </select>
                 </>
@@ -249,10 +261,10 @@ function OnboardingPanel({
         <div>
           <h3 className="mt-0 text-base">Import DOIO JSON</h3>
           <div className="grid gap-2 max-w-[520px]">
-            <input className="border rounded px-2 py-1" type="file" accept="application/json,.json" onChange={e=>onPickFile(e.target.files?.[0] ?? null)} />
-            <textarea className="w-full border rounded px-2 py-1 font-mono" value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Paste exported DOIO JSON here" rows={6} />
+            <input className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" type="file" accept="application/json,.json" onChange={e=>onPickFile(e.target.files?.[0] ?? null)} />
+            <textarea className="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 font-mono bg-white dark:bg-slate-900" value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Paste exported DOIO JSON here" rows={6} />
             <div>
-              <button className="px-3 py-1.5 rounded border disabled:opacity-50" onClick={importJson} disabled={!importText.trim()}>Import to {selectedProfileId ? `Profile #${selectedProfileId}` : 'Selected Profile'}</button>
+              <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50" onClick={importJson} disabled={!importText.trim()}>Import to {selectedProfileId ? `Profile #${selectedProfileId}` : 'Selected Profile'}</button>
             </div>
           </div>
         </div>
@@ -270,11 +282,11 @@ function FrameView({ frame }: { frame: Frame }) {
         <h3 className="font-semibold">Keys</h3>
         <div className="grid grid-cols-4 gap-2 max-w-[600px]">
           {k.map((label, i) => (
-            <div key={i} className="border border-gray-300 rounded-lg p-3 min-h-[60px] flex items-center justify-center text-center">
+            <div key={i} className="border border-gray-300 dark:border-slate-700 rounded-lg p-3 min-h-[60px] flex items-center justify-center text-center">
               <div>
                 <div className={label ? '' : 'opacity-90'}>{label ?? '—'}</div>
                 {km[i]?.hotkey && (
-                  <div className="text-xs text-gray-600 mt-1">{km[i]?.hotkey}</div>
+                  <div className="text-xs text-gray-600 dark:text-slate-400 mt-1">{km[i]?.hotkey}</div>
                 )}
               </div>
             </div>
@@ -296,15 +308,15 @@ function FrameView({ frame }: { frame: Frame }) {
 function KnobView({ name, data, meta }:{ name:string, data: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }, meta?: { onPress?: {hotkey?:string|null}, dialLeft?: {hotkey?:string|null}, dialRight?: {hotkey?:string|null} } }) {
   const Item = ({label, value, hotkey}:{label:string, value?:string|null, hotkey?:string|null}) => (
     <div className="flex gap-2 items-center">
-      <div className="w-[90px] text-gray-600">{label}</div>
-      <div className="border border-gray-300 rounded-md px-2 py-1 min-w-[240px] flex justify-between gap-3">
+      <div className="w-[90px] text-gray-600 dark:text-slate-400">{label}</div>
+      <div className="border border-gray-300 dark:border-slate-700 rounded-md px-2 py-1 min-w-[240px] flex justify-between gap-3 bg-white dark:bg-slate-900">
         <span>{value ?? '—'}</span>
-        {hotkey && <span className="text-xs text-gray-600">{hotkey}</span>}
+        {hotkey && <span className="text-xs text-gray-600 dark:text-slate-400">{hotkey}</span>}
       </div>
     </div>
   )
   return (
-    <div className="border border-gray-300 rounded-lg p-3">
+    <div className="border border-gray-300 dark:border-slate-700 rounded-lg p-3">
       <h4 className="mt-0 font-medium">{name}</h4>
       <div className="grid gap-2">
         <Item label="Press" value={data.onPress} hotkey={meta?.onPress?.hotkey ?? undefined} />

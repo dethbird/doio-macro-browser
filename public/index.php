@@ -67,6 +67,11 @@ function humanize(string $macro): ?string {
 	$m = preg_replace('/\s+/', '', $macro ?? '');
 	if ($m === '' || $m === null) return null;
 
+	// Friendly names for layer switching macros
+	if (preg_match('/^TO\((\d+)\)$/i', $m, $mm)) {
+		return 'Switch to Layer ' . (int)$mm[1];
+	}
+
 	$mods = [];
 	// unwrap nested modifiers, including combined and left/right-prefixed forms
 	// Examples: C(S(KC_P)), LSA(KC_L), RSA(KC_H)
