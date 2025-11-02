@@ -85,6 +85,13 @@ export default function App() {
         <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={()=>setShowSetupPanel(s=>!s)}>
           {showSetupPanel ? 'Hide Setup' : 'Setup'}
         </button>
+        <a
+          href="/logout"
+          className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800"
+          title="Sign out"
+        >
+          Logout
+        </a>
       </div>
 
       {showSetupPanel && (
