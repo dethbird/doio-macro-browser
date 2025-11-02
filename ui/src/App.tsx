@@ -327,7 +327,7 @@ function FrameView({ frame }: { frame: Frame }) {
   return (
     <div className="columns" style={{ marginTop: '1rem' }}>
       <div className="column">
-        <h3 className="title is-6">Keys</h3>
+        <h3 className="title is-4">🎹 Keys</h3>
         <div className="columns is-multiline is-mobile" style={{ maxWidth: '600px' }}>
           {k.map((label, i) => (
             <div key={i} className="column is-one-quarter">
@@ -342,7 +342,7 @@ function FrameView({ frame }: { frame: Frame }) {
         </div>
       </div>
       <div className="column">
-        <h3 className="title is-6">Knobs</h3>
+        <h3 className="title is-4">🎛️ Knobs</h3>
         <KnobView name="Top Left" data={frame.knobs.topLeft} meta={frame.knobs_meta?.topLeft} />
         <KnobView name="Top Right" data={frame.knobs.topRight} meta={frame.knobs_meta?.topRight} />
         <KnobView name="Big" data={frame.knobs.big} meta={frame.knobs_meta?.big} />
