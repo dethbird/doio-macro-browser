@@ -67,10 +67,10 @@ export default function App() {
   }, [])
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-        <h1 style={{ marginTop: 0, marginBottom: 0, flex: '1 1 auto' }}>DOIO Macro Browser</h1>
-        <button onClick={()=>setShowSetupPanel(s=>!s)}>
+    <div className="p-4">
+      <div className="flex items-center gap-3">
+        <h1 className="m-0 text-2xl font-semibold flex-1">DOIO Macro Browser</h1>
+        <button className="px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50" onClick={()=>setShowSetupPanel(s=>!s)}>
           {showSetupPanel ? 'Hide Setup' : 'Setup'}
         </button>
       </div>
@@ -107,22 +107,22 @@ export default function App() {
           setSelectedProfileId={setProfileId}
         />
       )}
-      {busy && <p style={{color:'#555'}}>{busy}</p>}
-      {notice && <p style={{color:'#0a7d16'}}>{notice}</p>}
+      {busy && <p className="text-gray-600">{busy}</p>}
+      {notice && <p className="text-green-700">{notice}</p>}
       {loading && <p>Loading profiles…</p>}
-      {error && <p style={{color:'crimson'}}>Error: {error}</p>}
+      {error && <p className="text-red-600">Error: {error}</p>}
       {!!profiles.length && (
-        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+        <div className="flex gap-2 items-center">
           <label htmlFor="profile">Profile:</label>
-          <select id="profile" value={profileId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setProfileId(Number(e.target.value))}>
+          <select className="border rounded px-2 py-1" id="profile" value={profileId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setProfileId(Number(e.target.value))}>
             {profiles.map((p: any) => (
               <option key={p.id} value={p.id}>{p.name} · {p.app}</option>
             ))}
           </select>
-          <div style={{ marginLeft: 'auto' }}>
-            <button onClick={()=>setLayer(l => (l + 3) % 4)}>&larr;</button>
-            <span style={{ padding: '0 8px' }}>Layer {layer}</span>
-            <button onClick={()=>setLayer(l => (l + 1) % 4)}>&rarr;</button>
+          <div className="ml-auto flex items-center gap-2">
+            <button className="px-2 py-1 rounded border" onClick={()=>setLayer(l => (l + 3) % 4)}>&larr;</button>
+            <span className="px-2">Layer {layer}</span>
+            <button className="px-2 py-1 rounded border" onClick={()=>setLayer(l => (l + 1) % 4)}>&rarr;</button>
           </div>
         </div>
       )}
@@ -219,26 +219,26 @@ function OnboardingPanel({
   }
 
   return (
-    <div style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:12, marginBottom:16, background:'#fafafa' }}>
-      <h2 style={{ marginTop:0, fontSize:18 }}>Setup</h2>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+    <div className="border border-gray-200 rounded-lg p-3 mb-4 bg-gray-50">
+      <h2 className="mt-0 text-lg">Setup</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h3 style={{ marginTop:0, fontSize:16 }}>Create Profile</h3>
-          <div style={{ display:'grid', gap:8, maxWidth:420 }}>
-            <label style={{ display:'grid', gap:4 }}>
-              <span style={{ fontSize:12, color:'#555' }}>Name</span>
-              <input value={name} onChange={e=>setName(e.target.value)} placeholder="Rebelle Painting" />
+          <h3 className="mt-0 text-base">Create Profile</h3>
+          <div className="grid gap-2 max-w-[420px]">
+            <label className="grid gap-1">
+              <span className="text-xs text-gray-600">Name</span>
+              <input className="border rounded px-2 py-1" value={name} onChange={e=>setName(e.target.value)} placeholder="Rebelle Painting" />
             </label>
-            <label style={{ display:'grid', gap:4 }}>
-              <span style={{ fontSize:12, color:'#555' }}>App</span>
-              <input value={app} onChange={e=>setApp(e.target.value)} placeholder="Rebelle" />
+            <label className="grid gap-1">
+              <span className="text-xs text-gray-600">App</span>
+              <input className="border rounded px-2 py-1" value={app} onChange={e=>setApp(e.target.value)} placeholder="Rebelle" />
             </label>
-            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-              <button disabled={!canCreate} onClick={createProfile}>Create</button>
+            <div className="flex gap-2 items-center">
+              <button className="px-3 py-1.5 rounded border disabled:opacity-50" disabled={!canCreate} onClick={createProfile}>Create</button>
               {!!profiles.length && (
                 <>
-                  <span style={{ color:'#777' }}>or select existing:</span>
-                  <select value={selectedProfileId ?? ''} onChange={e=>setSelectedProfileId(Number(e.target.value))}>
+                  <span className="text-gray-500">or select existing:</span>
+                  <select className="border rounded px-2 py-1" value={selectedProfileId ?? ''} onChange={e=>setSelectedProfileId(Number(e.target.value))}>
                     {profiles.map(p => <option key={p.id} value={p.id}>{p.name} · {p.app}</option>)}
                   </select>
                 </>
@@ -247,12 +247,12 @@ function OnboardingPanel({
           </div>
         </div>
         <div>
-          <h3 style={{ marginTop:0, fontSize:16 }}>Import DOIO JSON</h3>
-          <div style={{ display:'grid', gap:8, maxWidth:520 }}>
-            <input type="file" accept="application/json,.json" onChange={e=>onPickFile(e.target.files?.[0] ?? null)} />
-            <textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Paste exported DOIO JSON here" rows={6} style={{ width:'100%', fontFamily:'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }} />
+          <h3 className="mt-0 text-base">Import DOIO JSON</h3>
+          <div className="grid gap-2 max-w-[520px]">
+            <input className="border rounded px-2 py-1" type="file" accept="application/json,.json" onChange={e=>onPickFile(e.target.files?.[0] ?? null)} />
+            <textarea className="w-full border rounded px-2 py-1 font-mono" value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Paste exported DOIO JSON here" rows={6} />
             <div>
-              <button onClick={importJson} disabled={!importText.trim()}>Import to {selectedProfileId ? `Profile #${selectedProfileId}` : 'Selected Profile'}</button>
+              <button className="px-3 py-1.5 rounded border disabled:opacity-50" onClick={importJson} disabled={!importText.trim()}>Import to {selectedProfileId ? `Profile #${selectedProfileId}` : 'Selected Profile'}</button>
             </div>
           </div>
         </div>
@@ -265,24 +265,16 @@ function FrameView({ frame }: { frame: Frame }) {
   const k = frame.keys
   const km = frame.keys_meta || []
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap: 16, marginTop: 16 }}>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       <div>
-        <h3>Keys</h3>
-        <div style={{
-          display:'grid',
-          gridTemplateColumns:'repeat(4, 1fr)',
-          gap:8,
-          maxWidth: 600
-        }}>
+        <h3 className="font-semibold">Keys</h3>
+        <div className="grid grid-cols-4 gap-2 max-w-[600px]">
           {k.map((label, i) => (
-            <div key={i} style={{
-              border:'1px solid #ddd', borderRadius:8, padding:12, minHeight:60,
-              display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center'
-            }}>
+            <div key={i} className="border border-gray-300 rounded-lg p-3 min-h-[60px] flex items-center justify-center text-center">
               <div>
-                <div style={{opacity:label?1:0.9}}>{label ?? '—'}</div>
+                <div className={label ? '' : 'opacity-90'}>{label ?? '—'}</div>
                 {km[i]?.hotkey && (
-                  <div style={{ fontSize:12, color:'#666', marginTop:4 }}>{km[i]?.hotkey}</div>
+                  <div className="text-xs text-gray-600 mt-1">{km[i]?.hotkey}</div>
                 )}
               </div>
             </div>
@@ -290,8 +282,8 @@ function FrameView({ frame }: { frame: Frame }) {
         </div>
       </div>
       <div>
-        <h3>Knobs</h3>
-        <div style={{ display:'grid', gap:12 }}>
+        <h3 className="font-semibold">Knobs</h3>
+        <div className="grid gap-3">
           <KnobView name="Top Left" data={frame.knobs.topLeft} meta={frame.knobs_meta?.topLeft} />
           <KnobView name="Top Right" data={frame.knobs.topRight} meta={frame.knobs_meta?.topRight} />
           <KnobView name="Big" data={frame.knobs.big} meta={frame.knobs_meta?.big} />
@@ -303,18 +295,18 @@ function FrameView({ frame }: { frame: Frame }) {
 
 function KnobView({ name, data, meta }:{ name:string, data: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }, meta?: { onPress?: {hotkey?:string|null}, dialLeft?: {hotkey?:string|null}, dialRight?: {hotkey?:string|null} } }) {
   const Item = ({label, value, hotkey}:{label:string, value?:string|null, hotkey?:string|null}) => (
-    <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-      <div style={{ width:90, color:'#555' }}>{label}</div>
-      <div style={{ border:'1px solid #ddd', borderRadius:6, padding:'6px 10px', minWidth:240, display:'flex', justifyContent:'space-between', gap:12 }}>
+    <div className="flex gap-2 items-center">
+      <div className="w-[90px] text-gray-600">{label}</div>
+      <div className="border border-gray-300 rounded-md px-2 py-1 min-w-[240px] flex justify-between gap-3">
         <span>{value ?? '—'}</span>
-        {hotkey && <span style={{ fontSize:12, color:'#666' }}>{hotkey}</span>}
+        {hotkey && <span className="text-xs text-gray-600">{hotkey}</span>}
       </div>
     </div>
   )
   return (
-    <div style={{ border:'1px solid #ddd', borderRadius:8, padding:12 }}>
-      <h4 style={{ marginTop:0 }}>{name}</h4>
-      <div style={{ display:'grid', gap:8 }}>
+    <div className="border border-gray-300 rounded-lg p-3">
+      <h4 className="mt-0 font-medium">{name}</h4>
+      <div className="grid gap-2">
         <Item label="Press" value={data.onPress} hotkey={meta?.onPress?.hotkey ?? undefined} />
         <Item label="Dial Left" value={data.dialLeft} hotkey={meta?.dialLeft?.hotkey ?? undefined} />
         <Item label="Dial Right" value={data.dialRight} hotkey={meta?.dialRight?.hotkey ?? undefined} />
