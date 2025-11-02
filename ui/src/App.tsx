@@ -152,7 +152,7 @@ export default function App() {
           <div className="control is-expanded has-text-right">
             <div className="buttons has-addons is-right">
               <button className="button" onClick={()=>setLayer(l => (l + 3) % 4)}>&larr;</button>
-              <span className="button is-static">Layer {layer}</span>
+              <span className="button is-static">Layer {layer + 1}</span>
               <button className="button" onClick={()=>setLayer(l => (l + 1) % 4)}>&rarr;</button>
             </div>
           </div>

@@ -98,9 +98,9 @@ function humanize(string $macro): ?string {
 	$m = preg_replace('/\s+/', '', $macro ?? '');
 	if ($m === '' || $m === null) return null;
 
-	// Friendly names for layer switching macros
+	// Friendly names for layer switching macros (display as 1-indexed)
 	if (preg_match('/^TO\((\d+)\)$/i', $m, $mm)) {
-		return 'Switch to Layer ' . (int)$mm[1];
+		return 'Switch to Layer ' . ((int)$mm[1] + 1);
 	}
 
 	$mods = [];
