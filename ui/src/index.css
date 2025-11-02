@@ -1,14 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* App-level tweaks */
+/* Optional app-level tweaks when using Bulma */
 html, body, #root {
   height: 100%;
-}
-
-@layer base {
-  body {
-    @apply bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100;
-  }
 }

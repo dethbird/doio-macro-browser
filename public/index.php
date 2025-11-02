@@ -168,6 +168,26 @@ function resolve_label(PDO $pdo, string $macro, ?string $app): ?string {
 	return humanize($macro);
 }
 
+// Return label and its source: 'app' (app-specific translation), 'generic' (generic translation), or 'humanize'
+function resolve_label_with_source(PDO $pdo, string $macro, ?string $app): array {
+	$macro = trim($macro);
+	if ($macro === '' || strtoupper($macro) === 'KC_NO') return ['label' => null, 'source' => null];
+	// App-specific translation
+	if ($app) {
+		$stmt = $pdo->prepare('SELECT human_label FROM translations WHERE doio_macro = :m AND app = :a LIMIT 1');
+		$stmt->execute([':m'=>$macro, ':a'=>$app]);
+		$row = $stmt->fetch();
+		if ($row) return ['label' => $row['human_label'], 'source' => 'app'];
+	}
+	// Generic translation
+	$stmt = $pdo->prepare('SELECT human_label FROM translations WHERE doio_macro = :m AND app IS NULL LIMIT 1');
+	$stmt->execute([':m'=>$macro]);
+	$row = $stmt->fetch();
+	if ($row) return ['label' => $row['human_label'], 'source' => 'generic'];
+	// Fallback humanizer
+	return ['label' => humanize($macro), 'source' => 'humanize'];
+}
+
 /**
  * Read Vite manifest and return asset URLs for the given entry (relative to /public/app).
  * Example entry: 'src/main.tsx'
@@ -675,23 +695,26 @@ $app->get('/api/profiles/{id}/frames', function (Request $request, Response $res
 			foreach ($grid as $rowIdxs) {
 				foreach ($rowIdxs as $slot) {
 					$macro = $macros[$layer][$slot] ?? '';
-					$label = resolve_label($pdo, $macro, $appName);
+					$res = resolve_label_with_source($pdo, (string)$macro, $appName);
+					$label = $res['label'];
 					$keys[] = $label;
 					$keys_meta[] = [
 						'label' => $label,
 						'hotkey' => humanize((string)$macro),
 						'raw' => ($macro !== '' ? (string)$macro : null),
+						'source' => $res['source'],
 					];
 				}
 			}
 
 			$metaFor = function($macro) use ($appName, $pdo) {
 				$raw = (string)($macro ?? '');
-				$label = resolve_label($pdo, $raw, $appName);
+				$res = resolve_label_with_source($pdo, $raw, $appName);
 				return [
-					'label' => $label,
+					'label' => $res['label'],
 					'hotkey' => humanize($raw),
 					'raw' => ($raw !== '' ? $raw : null),
+					'source' => $res['source'],
 				];
 			};
 			$frames[] = [

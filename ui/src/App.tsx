@@ -3,16 +3,16 @@ import React, { useEffect, useState } from 'react'
 type Frame = {
   id: number
   keys: (string | null)[]
-  keys_meta?: ({ label?: string|null, hotkey?: string|null, raw?: string|null } | null)[]
+  keys_meta?: ({ label?: string|null, hotkey?: string|null, raw?: string|null, source?: string|null } | null)[]
   knobs: {
     topLeft: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }
     topRight:{ onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }
     big:     { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }
   }
   knobs_meta?: {
-    topLeft: { onPress?: { label?: string|null, hotkey?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null } }
-    topRight:{ onPress?: { label?: string|null, hotkey?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null } }
-    big:     { onPress?: { label?: string|null, hotkey?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null } }
+    topLeft: { onPress?: { label?: string|null, hotkey?: string|null, source?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null, source?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null, source?: string|null } }
+    topRight:{ onPress?: { label?: string|null, hotkey?: string|null, source?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null, source?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null, source?: string|null } }
+    big:     { onPress?: { label?: string|null, hotkey?: string|null, source?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null, source?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null, source?: string|null } }
   }
 }
 
@@ -79,20 +79,25 @@ export default function App() {
   }, [])
 
   return (
-    <div className="p-4 max-w-[1024px] mx-auto">
-      <div className="flex items-center gap-3">
-        <h1 className="m-0 text-2xl font-semibold flex-1">DOIO Macro Browser</h1>
-        <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={()=>setShowSetupPanel(s=>!s)}>
-          {showSetupPanel ? 'Hide Setup' : 'Setup'}
-        </button>
-        <a
-          href="/logout"
-          className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800"
-          title="Sign out"
-        >
-          Logout
-        </a>
-      </div>
+    <section className="section">
+      <div className="container" style={{ maxWidth: '1024px' }}>
+        <nav className="level">
+          <div className="level-left">
+            <div className="level-item">
+              <h1 className="title is-3">DOIO Macro Browser</h1>
+            </div>
+          </div>
+          <div className="level-right">
+            <div className="level-item">
+              <button className="button is-light" onClick={()=>setShowSetupPanel(s=>!s)}>
+                {showSetupPanel ? 'Hide Setup' : 'Setup'}
+              </button>
+            </div>
+            <div className="level-item">
+              <a href="/logout" className="button is-light" title="Sign out">Logout</a>
+            </div>
+          </div>
+        </nav>
 
       {showSetupPanel && (
         <OnboardingPanel
@@ -126,22 +131,30 @@ export default function App() {
           setSelectedProfileId={setProfileId}
         />
       )}
-      {busy && <p className="text-gray-600 dark:text-slate-400">{busy}</p>}
-      {notice && <p className="text-green-700">{notice}</p>}
-      {loading && <p>Loading profiles…</p>}
-      {error && <p className="text-red-600">Error: {error}</p>}
+      {busy && <div className="notification is-info is-light">{busy}</div>}
+      {notice && <div className="notification is-success is-light">{notice}</div>}
+      {loading && <div className="notification is-light">Loading profiles…</div>}
+      {error && <div className="notification is-danger is-light">Error: {error}</div>}
       {!!profiles.length && (
-        <div className="flex gap-2 items-center">
-          <label htmlFor="profile">Profile:</label>
-          <select className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" id="profile" value={profileId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setProfileId(Number(e.target.value))}>
-            {profiles.map((p: any) => (
-              <option key={p.id} value={p.id}>{p.name} · {p.app}</option>
-            ))}
-          </select>
-          <div className="ml-auto flex items-center gap-2">
-            <button className="px-2 py-1 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={()=>setLayer(l => (l + 3) % 4)}>&larr;</button>
-            <span className="px-2">Layer {layer}</span>
-            <button className="px-2 py-1 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={()=>setLayer(l => (l + 1) % 4)}>&rarr;</button>
+        <div className="field is-grouped is-align-items-center">
+          <div className="control">
+            <label className="label" htmlFor="profile" style={{ marginBottom: 0 }}>Profile:</label>
+          </div>
+          <div className="control">
+            <div className="select">
+              <select id="profile" value={profileId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setProfileId(Number(e.target.value))}>
+                {profiles.map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.name} · {p.app}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="control is-expanded has-text-right">
+            <div className="buttons has-addons is-right">
+              <button className="button" onClick={()=>setLayer(l => (l + 3) % 4)}>&larr;</button>
+              <span className="button is-static">Layer {layer}</span>
+              <button className="button" onClick={()=>setLayer(l => (l + 1) % 4)}>&rarr;</button>
+            </div>
           </div>
         </div>
       )}
@@ -149,7 +162,8 @@ export default function App() {
       {frames && (
         <FrameView frame={frames[layer]} />
       )}
-    </div>
+      </div>
+    </section>
   )
 }
 
@@ -238,40 +252,67 @@ function OnboardingPanel({
   }
 
   return (
-    <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-3 mb-4 bg-gray-50 dark:bg-slate-800">
-      <h2 className="mt-0 text-lg">Setup</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h3 className="mt-0 text-base">Create Profile</h3>
-          <div className="grid gap-2 max-w-[420px]">
-            <label className="grid gap-1">
-              <span className="text-xs text-gray-600 dark:text-slate-400">Name</span>
-              <input className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" value={name} onChange={e=>setName(e.target.value)} placeholder="Rebelle Painting" />
-            </label>
-            <label className="grid gap-1">
-              <span className="text-xs text-gray-600 dark:text-slate-400">App</span>
-              <input className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" value={app} onChange={e=>setApp(e.target.value)} placeholder="Rebelle" />
-            </label>
-            <div className="flex gap-2 items-center">
-              <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50" disabled={!canCreate} onClick={createProfile}>Create</button>
+    <div className="box">
+      <h2 className="title is-5">Setup</h2>
+      <div className="columns">
+        <div className="column">
+          <h3 className="subtitle is-6">Create Profile</h3>
+          <div style={{ maxWidth: 420 }}>
+            <div className="field">
+              <label className="label is-small">Name</label>
+              <div className="control">
+                <input className="input" value={name} onChange={e=>setName(e.target.value)} placeholder="Rebelle Painting" />
+              </div>
+            </div>
+            <div className="field">
+              <label className="label is-small">App</label>
+              <div className="control">
+                <input className="input" value={app} onChange={e=>setApp(e.target.value)} placeholder="Rebelle" />
+              </div>
+            </div>
+            <div className="field is-grouped is-align-items-center">
+              <div className="control">
+                <button className="button is-link" disabled={!canCreate} onClick={createProfile}>Create</button>
+              </div>
               {!!profiles.length && (
                 <>
-                  <span className="text-gray-500 dark:text-slate-400">or select existing:</span>
-                  <select className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" value={selectedProfileId ?? ''} onChange={e=>setSelectedProfileId(Number(e.target.value))}>
-                    {profiles.map(p => <option key={p.id} value={p.id}>{p.name} · {p.app}</option>)}
-                  </select>
+                  <div className="control"><span className="help" style={{ marginTop: '0.6rem' }}>or select existing:</span></div>
+                  <div className="control">
+                    <div className="select">
+                      <select value={selectedProfileId ?? ''} onChange={e=>setSelectedProfileId(Number(e.target.value))}>
+                        {profiles.map(p => <option key={p.id} value={p.id}>{p.name} · {p.app}</option>)}
+                      </select>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
           </div>
         </div>
-        <div>
-          <h3 className="mt-0 text-base">Import DOIO JSON</h3>
-          <div className="grid gap-2 max-w-[520px]">
-            <input className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" type="file" accept="application/json,.json" onChange={e=>onPickFile(e.target.files?.[0] ?? null)} />
-            <textarea className="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 font-mono bg-white dark:bg-slate-900" value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Paste exported DOIO JSON here" rows={6} />
-            <div>
-              <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50" onClick={importJson} disabled={!importText.trim()}>Import to {selectedProfileId ? `Profile #${selectedProfileId}` : 'Selected Profile'}</button>
+        <div className="column">
+          <h3 className="subtitle is-6">Import DOIO JSON</h3>
+          <div style={{ maxWidth: 520 }}>
+            <div className="field">
+              <div className="file has-name is-fullwidth">
+                <label className="file-label">
+                  <input className="file-input" type="file" accept="application/json,.json" onChange={e=>onPickFile(e.target.files?.[0] ?? null)} />
+                  <span className="file-cta">
+                    <span className="file-icon">📄</span>
+                    <span className="file-label">Choose JSON…</span>
+                  </span>
+                  <span className="file-name">{importText ? 'Selected' : 'No file selected'}</span>
+                </label>
+              </div>
+            </div>
+            <div className="field">
+              <div className="control">
+                <textarea className="textarea is-family-monospace" value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Paste exported DOIO JSON here" rows={6} />
+              </div>
+            </div>
+            <div className="field">
+              <div className="control">
+                <button className="button" onClick={importJson} disabled={!importText.trim()}>Import to {selectedProfileId ? `Profile #${selectedProfileId}` : 'Selected Profile'}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -284,52 +325,56 @@ function FrameView({ frame }: { frame: Frame }) {
   const k = frame.keys
   const km = frame.keys_meta || []
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-      <div>
-        <h3 className="font-semibold">Keys</h3>
-        <div className="grid grid-cols-4 gap-2 max-w-[600px]">
+    <div className="columns" style={{ marginTop: '1rem' }}>
+      <div className="column">
+        <h3 className="title is-6">Keys</h3>
+        <div className="columns is-multiline is-mobile" style={{ maxWidth: '600px' }}>
           {k.map((label, i) => (
-            <div key={i} className="border border-gray-300 dark:border-slate-700 rounded-lg p-3 min-h-[60px] flex items-center justify-center text-center">
-              <div>
-                <div className={label ? '' : 'opacity-90'}>{label ?? '—'}</div>
+            <div key={i} className="column is-one-quarter">
+              <div className="box has-text-centered" style={{ minHeight: '72px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', border: '1px solid purple' }}>
+                <div className={km[i]?.source && km[i]?.source !== 'humanize' ? 'subtitle is-6' : ''}>{label ?? '—'}</div>
                 {km[i]?.hotkey && (
-                  <div className="text-xs text-gray-600 dark:text-slate-400 mt-1">{km[i]?.hotkey}</div>
+                  <div className="is-size-7 has-text-grey" style={{ marginTop: '0.25rem' }}>{km[i]?.hotkey}</div>
                 )}
               </div>
             </div>
           ))}
         </div>
       </div>
-      <div>
-        <h3 className="font-semibold">Knobs</h3>
-        <div className="grid gap-3">
-          <KnobView name="Top Left" data={frame.knobs.topLeft} meta={frame.knobs_meta?.topLeft} />
-          <KnobView name="Top Right" data={frame.knobs.topRight} meta={frame.knobs_meta?.topRight} />
-          <KnobView name="Big" data={frame.knobs.big} meta={frame.knobs_meta?.big} />
-        </div>
+      <div className="column">
+        <h3 className="title is-6">Knobs</h3>
+        <KnobView name="Top Left" data={frame.knobs.topLeft} meta={frame.knobs_meta?.topLeft} />
+        <KnobView name="Top Right" data={frame.knobs.topRight} meta={frame.knobs_meta?.topRight} />
+        <KnobView name="Big" data={frame.knobs.big} meta={frame.knobs_meta?.big} />
       </div>
     </div>
   )
 }
 
-function KnobView({ name, data, meta }:{ name:string, data: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }, meta?: { onPress?: {hotkey?:string|null}, dialLeft?: {hotkey?:string|null}, dialRight?: {hotkey?:string|null} } }) {
-  const Item = ({label, value, hotkey}:{label:string, value?:string|null, hotkey?:string|null}) => (
-    <div className="flex gap-2 items-center">
-      <div className="w-[90px] text-gray-600 dark:text-slate-400">{label}</div>
-      <div className="border border-gray-300 dark:border-slate-700 rounded-md px-2 py-1 min-w-[240px] flex justify-between gap-3 bg-white dark:bg-slate-900">
-        <span>{value ?? '—'}</span>
-        {hotkey && <span className="text-xs text-gray-600 dark:text-slate-400">{hotkey}</span>}
+function KnobView({ name, data, meta }:{ name:string, data: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }, meta?: { onPress?: {hotkey?:string|null, source?: string|null}, dialLeft?: {hotkey?:string|null, source?: string|null}, dialRight?: {hotkey?:string|null, source?: string|null} } }) {
+  const Item = ({label, value, hotkey, source}:{label:string, value?:string|null, hotkey?:string|null, source?: string|null}) => (
+    <div className="field is-horizontal">
+      <div className="field-label is-normal" style={{ minWidth: '90px' }}>
+        <label className="label is-small">{label}</label>
+      </div>
+      <div className="field-body">
+        <div className="field">
+          <div className="control">
+            <div className="box" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', gap: '12px', minWidth: '240px', border: '1px solid purple' }}>
+              <span className={source && source !== 'humanize' ? 'subtitle is-6' : ''}>{value ?? '—'}</span>
+              {hotkey && <span className="is-size-7 has-text-grey">{hotkey}</span>}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
   return (
-    <div className="border border-gray-300 dark:border-slate-700 rounded-lg p-3">
-      <h4 className="mt-0 font-medium">{name}</h4>
-      <div className="grid gap-2">
-        <Item label="Press" value={data.onPress} hotkey={meta?.onPress?.hotkey ?? undefined} />
-        <Item label="Dial Left" value={data.dialLeft} hotkey={meta?.dialLeft?.hotkey ?? undefined} />
-        <Item label="Dial Right" value={data.dialRight} hotkey={meta?.dialRight?.hotkey ?? undefined} />
-      </div>
+    <div className="box">
+      <h4 className="title is-6" style={{ marginTop: 0 }}>{name}</h4>
+      <Item label="Press" value={data.onPress} hotkey={meta?.onPress?.hotkey ?? undefined} source={meta?.onPress?.source ?? undefined} />
+      <Item label="Dial Left" value={data.dialLeft} hotkey={meta?.dialLeft?.hotkey ?? undefined} source={meta?.dialLeft?.source ?? undefined} />
+      <Item label="Dial Right" value={data.dialRight} hotkey={meta?.dialRight?.hotkey ?? undefined} source={meta?.dialRight?.source ?? undefined} />
     </div>
   )
 }
