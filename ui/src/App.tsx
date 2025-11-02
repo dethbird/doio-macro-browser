@@ -14,20 +14,27 @@ function useProfiles() {
   const [profiles, setProfiles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  useEffect(() => {
+
+  const refresh = () => {
+    setLoading(true)
+    setError(null)
     fetch('/api/profiles')
       .then(r => r.json())
       .then(data => { setProfiles(data.profiles || []); setLoading(false) })
       .catch(e => { setError(String(e)); setLoading(false) })
-  }, [])
-  return { profiles, loading, error }
+  }
+
+  useEffect(() => { refresh() }, [])
+  return { profiles, loading, error, refresh, setProfiles }
 }
 
 export default function App() {
-  const { profiles, loading, error } = useProfiles()
+  const { profiles, loading, error, refresh, setProfiles } = useProfiles()
   const [profileId, setProfileId] = useState<number | null>(null)
   const [layer, setLayer] = useState(0)
   const [frames, setFrames] = useState<Frame[] | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
     if (profiles.length && profileId == null) setProfileId(profiles[0].id)
@@ -53,6 +60,36 @@ export default function App() {
   return (
     <div style={{ padding: 16 }}>
       <h1 style={{ marginTop: 0 }}>DOIO Macro Browser</h1>
+      <OnboardingPanel
+        profiles={profiles}
+        onCreated={(p:any)=>{
+          // Prepend and select
+          setProfiles((prev:any[]) => [p, ...prev])
+          setProfileId(p.id)
+          setNotice(`Profile "${p.name}" created`)
+          setTimeout(()=>setNotice(null), 2500)
+        }}
+        onImport={async (pid:number) => {
+          // After import, refresh frames for selected profile
+          if (profileId === pid) {
+            setBusy('Refreshing frames…')
+            try {
+              const r = await fetch(`/api/profiles/${pid}/frames`)
+              const f = await r.json()
+              setFrames(f)
+            } finally {
+              setBusy(null)
+            }
+          }
+        }}
+        onRefreshProfiles={refresh}
+        setBusy={setBusy}
+        setNotice={setNotice}
+        selectedProfileId={profileId}
+        setSelectedProfileId={setProfileId}
+      />
+      {busy && <p style={{color:'#555'}}>{busy}</p>}
+      {notice && <p style={{color:'#0a7d16'}}>{notice}</p>}
       {loading && <p>Loading profiles…</p>}
       {error && <p style={{color:'crimson'}}>Error: {error}</p>}
       {!!profiles.length && (
@@ -74,6 +111,130 @@ export default function App() {
       {frames && (
         <FrameView frame={frames[layer]} />
       )}
+    </div>
+  )
+}
+
+function OnboardingPanel({
+  profiles,
+  onCreated,
+  onImport,
+  onRefreshProfiles,
+  setBusy,
+  setNotice,
+  selectedProfileId,
+  setSelectedProfileId,
+}: {
+  profiles: any[]
+  onCreated: (p:any)=>void
+  onImport: (profileId:number)=>void|Promise<void>
+  onRefreshProfiles: ()=>void
+  setBusy: (m:string|null)=>void
+  setNotice: (m:string|null)=>void
+  selectedProfileId: number | null
+  setSelectedProfileId: (id:number|null)=>void
+}) {
+  const [name, setName] = useState('')
+  const [app, setApp] = useState('')
+  const [importText, setImportText] = useState('')
+  const canCreate = name.trim() !== '' && app.trim() !== ''
+  const createProfile = async () => {
+    if (!canCreate) return
+    setBusy('Creating profile…')
+    try {
+      const res = await fetch('/api/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), app: app.trim() })
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const p = await res.json()
+      onCreated(p)
+      onRefreshProfiles()
+      setName('')
+      setApp('')
+    } catch (e:any) {
+      alert(`Failed to create profile: ${e?.message || e}`)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const importJson = async () => {
+    const pid = selectedProfileId ?? (profiles[0]?.id ?? null)
+    if (!pid) {
+      alert('Select or create a profile first.')
+      return
+    }
+    let raw = importText
+    if (!raw || raw.trim() === '') {
+      alert('Paste your DOIO JSON first.')
+      return
+    }
+    setBusy('Importing mapping…')
+    try {
+      const res = await fetch(`/api/profiles/${pid}/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: raw
+      })
+      const data = await res.json()
+      if (!res.ok || data?.error) throw new Error(data?.error || `HTTP ${res.status}`)
+      setNotice('Import successful')
+      setTimeout(()=>setNotice(null), 2500)
+      await onImport(pid)
+    } catch (e:any) {
+      alert(`Import failed: ${e?.message || e}`)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const onPickFile = async (file: File | null) => {
+    if (!file) return
+    const text = await file.text()
+    setImportText(text)
+  }
+
+  return (
+    <div style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:12, marginBottom:16, background:'#fafafa' }}>
+      <h2 style={{ marginTop:0, fontSize:18 }}>Setup</h2>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        <div>
+          <h3 style={{ marginTop:0, fontSize:16 }}>Create Profile</h3>
+          <div style={{ display:'grid', gap:8, maxWidth:420 }}>
+            <label style={{ display:'grid', gap:4 }}>
+              <span style={{ fontSize:12, color:'#555' }}>Name</span>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="Rebelle Painting" />
+            </label>
+            <label style={{ display:'grid', gap:4 }}>
+              <span style={{ fontSize:12, color:'#555' }}>App</span>
+              <input value={app} onChange={e=>setApp(e.target.value)} placeholder="Rebelle" />
+            </label>
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <button disabled={!canCreate} onClick={createProfile}>Create</button>
+              {!!profiles.length && (
+                <>
+                  <span style={{ color:'#777' }}>or select existing:</span>
+                  <select value={selectedProfileId ?? ''} onChange={e=>setSelectedProfileId(Number(e.target.value))}>
+                    {profiles.map(p => <option key={p.id} value={p.id}>{p.name} · {p.app}</option>)}
+                  </select>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 style={{ marginTop:0, fontSize:16 }}>Import DOIO JSON</h3>
+          <div style={{ display:'grid', gap:8, maxWidth:520 }}>
+            <input type="file" accept="application/json,.json" onChange={e=>onPickFile(e.target.files?.[0] ?? null)} />
+            <textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Paste exported DOIO JSON here" rows={6} style={{ width:'100%', fontFamily:'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }} />
+            <div>
+              <button onClick={importJson} disabled={!importText.trim()}>Import to {selectedProfileId ? `Profile #${selectedProfileId}` : 'Selected Profile'}</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
