@@ -538,15 +538,33 @@ $app->get('/api/profiles/{id}/frames', function (Request $request, Response $res
 		$frames = [];
 		for ($layer=0; $layer<4; $layer++) {
 			$keys = [];
+			$keys_meta = [];
 			foreach ($grid as $rowIdxs) {
 				foreach ($rowIdxs as $slot) {
 					$macro = $macros[$layer][$slot] ?? '';
-					$keys[] = resolve_label($pdo, $macro, $appName);
+					$label = resolve_label($pdo, $macro, $appName);
+					$keys[] = $label;
+					$keys_meta[] = [
+						'label' => $label,
+						'hotkey' => humanize((string)$macro),
+						'raw' => ($macro !== '' ? (string)$macro : null),
+					];
 				}
 			}
+
+			$metaFor = function($macro) use ($appName, $pdo) {
+				$raw = (string)($macro ?? '');
+				$label = resolve_label($pdo, $raw, $appName);
+				return [
+					'label' => $label,
+					'hotkey' => humanize($raw),
+					'raw' => ($raw !== '' ? $raw : null),
+				];
+			};
 			$frames[] = [
 				'id' => $layer,
 				'keys' => $keys,
+				'keys_meta' => $keys_meta,
 				'knobs' => [
 					'topLeft' => [
 						'onPress' => resolve_label($pdo, $macros[$layer][$knobs['topLeft']] ?? '', $appName),
@@ -562,6 +580,23 @@ $app->get('/api/profiles/{id}/frames', function (Request $request, Response $res
 						'onPress' => resolve_label($pdo, $macros[$layer][$knobs['big']] ?? '', $appName),
 						'dialLeft' => resolve_label($pdo, $enc['big']['left'][$layer] ?? '', $appName),
 						'dialRight'=> resolve_label($pdo, $enc['big']['right'][$layer] ?? '', $appName),
+					],
+				],
+				'knobs_meta' => [
+					'topLeft' => [
+						'onPress' => $metaFor($macros[$layer][$knobs['topLeft']] ?? ''),
+						'dialLeft' => $metaFor($enc['topLeft']['left'][$layer] ?? ''),
+						'dialRight'=> $metaFor($enc['topLeft']['right'][$layer] ?? ''),
+					],
+					'topRight' => [
+						'onPress' => $metaFor($macros[$layer][$knobs['topRight']] ?? ''),
+						'dialLeft' => $metaFor($enc['topRight']['left'][$layer] ?? ''),
+						'dialRight'=> $metaFor($enc['topRight']['right'][$layer] ?? ''),
+					],
+					'big' => [
+						'onPress' => $metaFor($macros[$layer][$knobs['big']] ?? ''),
+						'dialLeft' => $metaFor($enc['big']['left'][$layer] ?? ''),
+						'dialRight'=> $metaFor($enc['big']['right'][$layer] ?? ''),
 					],
 				],
 			];

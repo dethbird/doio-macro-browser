@@ -3,10 +3,16 @@ import React, { useEffect, useState } from 'react'
 type Frame = {
   id: number
   keys: (string | null)[]
+  keys_meta?: ({ label?: string|null, hotkey?: string|null, raw?: string|null } | null)[]
   knobs: {
     topLeft: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }
     topRight:{ onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }
     big:     { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }
+  }
+  knobs_meta?: {
+    topLeft: { onPress?: { label?: string|null, hotkey?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null } }
+    topRight:{ onPress?: { label?: string|null, hotkey?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null } }
+    big:     { onPress?: { label?: string|null, hotkey?: string|null }, dialLeft?: { label?: string|null, hotkey?: string|null }, dialRight?: { label?: string|null, hotkey?: string|null } }
   }
 }
 
@@ -35,6 +41,7 @@ export default function App() {
   const [frames, setFrames] = useState<Frame[] | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [showSetupPanel, setShowSetupPanel] = useState(false)
 
   useEffect(() => {
     if (profiles.length && profileId == null) setProfileId(profiles[0].id)
@@ -48,6 +55,11 @@ export default function App() {
       .catch(() => setFrames(null))
   }, [profileId])
 
+  // Open setup panel automatically if there are no profiles
+  useEffect(() => {
+    if (profiles.length === 0) setShowSetupPanel(true)
+  }, [profiles.length])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') setLayer((l: number) => (l + 1) % 4)
@@ -59,35 +71,45 @@ export default function App() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h1 style={{ marginTop: 0 }}>DOIO Macro Browser</h1>
-      <OnboardingPanel
-        profiles={profiles}
-        onCreated={(p:any)=>{
-          // Prepend and select
-          setProfiles((prev:any[]) => [p, ...prev])
-          setProfileId(p.id)
-          setNotice(`Profile "${p.name}" created`)
-          setTimeout(()=>setNotice(null), 2500)
-        }}
-        onImport={async (pid:number) => {
-          // After import, refresh frames for selected profile
-          if (profileId === pid) {
-            setBusy('Refreshing frames…')
-            try {
-              const r = await fetch(`/api/profiles/${pid}/frames`)
-              const f = await r.json()
-              setFrames(f)
-            } finally {
-              setBusy(null)
+      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+        <h1 style={{ marginTop: 0, marginBottom: 0, flex: '1 1 auto' }}>DOIO Macro Browser</h1>
+        <button onClick={()=>setShowSetupPanel(s=>!s)}>
+          {showSetupPanel || profiles.length === 0 ? 'Hide Setup' : 'Setup'}
+        </button>
+      </div>
+
+      {(showSetupPanel || profiles.length === 0) && (
+        <OnboardingPanel
+          profiles={profiles}
+          onCreated={(p:any)=>{
+            // Prepend and select
+            setProfiles((prev:any[]) => [p, ...prev])
+            setProfileId(p.id)
+            setNotice(`Profile \"${p.name}\" created`)
+            setTimeout(()=>setNotice(null), 2500)
+            // Hide panel once a profile exists (user can reopen)
+            setShowSetupPanel(false)
+          }}
+          onImport={async (pid:number) => {
+            // After import, refresh frames for selected profile
+            if (profileId === pid) {
+              setBusy('Refreshing frames…')
+              try {
+                const r = await fetch(`/api/profiles/${pid}/frames`)
+                const f = await r.json()
+                setFrames(f)
+              } finally {
+                setBusy(null)
+              }
             }
-          }
-        }}
-        onRefreshProfiles={refresh}
-        setBusy={setBusy}
-        setNotice={setNotice}
-        selectedProfileId={profileId}
-        setSelectedProfileId={setProfileId}
-      />
+          }}
+          onRefreshProfiles={refresh}
+          setBusy={setBusy}
+          setNotice={setNotice}
+          selectedProfileId={profileId}
+          setSelectedProfileId={setProfileId}
+        />
+      )}
       {busy && <p style={{color:'#555'}}>{busy}</p>}
       {notice && <p style={{color:'#0a7d16'}}>{notice}</p>}
       {loading && <p>Loading profiles…</p>}
@@ -244,6 +266,7 @@ function OnboardingPanel({
 
 function FrameView({ frame }: { frame: Frame }) {
   const k = frame.keys
+  const km = frame.keys_meta || []
   return (
     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap: 16, marginTop: 16 }}>
       <div>
@@ -259,7 +282,12 @@ function FrameView({ frame }: { frame: Frame }) {
               border:'1px solid #ddd', borderRadius:8, padding:12, minHeight:60,
               display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center'
             }}>
-              <span style={{opacity:label?1:0.4}}>{label ?? '—'}</span>
+              <div>
+                <div style={{opacity:label?1:0.9}}>{label ?? '—'}</div>
+                {km[i]?.hotkey && (
+                  <div style={{ fontSize:12, color:'#666', marginTop:4 }}>{km[i]?.hotkey}</div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -267,21 +295,22 @@ function FrameView({ frame }: { frame: Frame }) {
       <div>
         <h3>Knobs</h3>
         <div style={{ display:'grid', gap:12 }}>
-          <KnobView name="Top Left" data={frame.knobs.topLeft} />
-          <KnobView name="Top Right" data={frame.knobs.topRight} />
-          <KnobView name="Big" data={frame.knobs.big} />
+          <KnobView name="Top Left" data={frame.knobs.topLeft} meta={frame.knobs_meta?.topLeft} />
+          <KnobView name="Top Right" data={frame.knobs.topRight} meta={frame.knobs_meta?.topRight} />
+          <KnobView name="Big" data={frame.knobs.big} meta={frame.knobs_meta?.big} />
         </div>
       </div>
     </div>
   )
 }
 
-function KnobView({ name, data }:{ name:string, data: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }}) {
-  const Item = ({label, value}:{label:string, value?:string|null}) => (
+function KnobView({ name, data, meta }:{ name:string, data: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }, meta?: { onPress?: {hotkey?:string|null}, dialLeft?: {hotkey?:string|null}, dialRight?: {hotkey?:string|null} } }) {
+  const Item = ({label, value, hotkey}:{label:string, value?:string|null, hotkey?:string|null}) => (
     <div style={{ display:'flex', gap:8, alignItems:'center' }}>
       <div style={{ width:90, color:'#555' }}>{label}</div>
-      <div style={{ border:'1px solid #ddd', borderRadius:6, padding:'6px 10px', minWidth:240 }}>
-        {value ?? '—'}
+      <div style={{ border:'1px solid #ddd', borderRadius:6, padding:'6px 10px', minWidth:240, display:'flex', justifyContent:'space-between', gap:12 }}>
+        <span>{value ?? '—'}</span>
+        {hotkey && <span style={{ fontSize:12, color:'#666' }}>{hotkey}</span>}
       </div>
     </div>
   )
@@ -289,9 +318,9 @@ function KnobView({ name, data }:{ name:string, data: { onPress?: string|null, d
     <div style={{ border:'1px solid #ddd', borderRadius:8, padding:12 }}>
       <h4 style={{ marginTop:0 }}>{name}</h4>
       <div style={{ display:'grid', gap:8 }}>
-        <Item label="Press" value={data.onPress} />
-        <Item label="Dial Left" value={data.dialLeft} />
-        <Item label="Dial Right" value={data.dialRight} />
+        <Item label="Press" value={data.onPress} hotkey={meta?.onPress?.hotkey ?? undefined} />
+        <Item label="Dial Left" value={data.dialLeft} hotkey={meta?.dialLeft?.hotkey ?? undefined} />
+        <Item label="Dial Right" value={data.dialRight} hotkey={meta?.dialRight?.hotkey ?? undefined} />
       </div>
     </div>
   )
