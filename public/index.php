@@ -5,6 +5,8 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Slim\Factory\AppFactory;
+use Slim\Views\Twig;
+use Slim\Views\TwigMiddleware;
 
 $autoload = __DIR__ . '/../vendor/autoload.php';
 if (!file_exists($autoload)) {
@@ -119,16 +121,22 @@ $app->get('/api/health', function (Request $request, Response $response): Respon
 	return json($response, ['ok' => true, 'ts' => time()]);
 });
 
-// Simple index page so hitting "/" shows something instead of a 404
-$app->get('/', function (Request $request, Response $response): Response {
-	$html = '<!doctype html><html><head><meta charset="utf-8"><title>DOIO Macro Browser</title>' .
-			'<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;padding:2rem}code{background:#f5f5f5;padding:.2rem .4rem;border-radius:4px}</style>' .
-			'</head><body>' .
-			'<h1>DOIO Macro Browser</h1>' .
-			'<p>Backend is running. Try <code>/api/health</code> or <code>/api/profiles</code>.</p>' .
-			'</body></html>';
-	$response->getBody()->write($html);
-	return $response->withHeader('Content-Type', 'text/html');
+// NOTE: Root path "/" renders the React mount via Twig
+
+// --- Twig setup for server-rendered pages (React mount lives here) ---
+$twig = Twig::create(__DIR__ . '/../templates', [
+	'cache' => false, // enable a cache directory for prod
+]);
+$app->add(TwigMiddleware::create($app, $twig));
+
+// React mount page at root
+$app->get('/', function (Request $request, Response $response) use ($twig): Response {
+	// In the future, detect a Vite manifest in /public/app/manifest.json
+	// and pass asset URLs into the template.
+	return $twig->render($response, 'app.twig', [
+		'title' => 'DOIO Macro Browser',
+		// 'js' => '/app/assets/index.js', 'css' => '/app/assets/index.css'
+	]);
 });
 
 // List translations with optional filters: app, macro (exact), q (search)
