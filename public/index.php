@@ -68,10 +68,23 @@ function humanize(string $macro): ?string {
 	if ($m === '' || $m === null) return null;
 
 	$mods = [];
-	// unwrap nested modifiers like C(S(...))
-	while (preg_match('/^(C|S|A|G)\((.*)\)$/', $m, $mm)) {
-		$mods[] = $mm[1];
-		$m = $mm[2];
+	// unwrap nested modifiers, including combined and left/right-prefixed forms
+	// Examples: C(S(KC_P)), LSA(KC_L), RSA(KC_H)
+	while (true) {
+		// Combined like LSA(...), RSA(...), LCAG(...)
+		if (preg_match('/^[LR]?((?:C|S|A|G){2,})\((.*)\)$/', $m, $mm)) {
+			$group = $mm[1];
+			foreach (str_split($group) as $ch) { $mods[] = $ch; }
+			$m = $mm[2];
+			continue;
+		}
+		// Single like C(...), with optional L/R prefix (e.g., LC(...), RC(...))
+		if (preg_match('/^[LR]?(C|S|A|G)\((.*)\)$/', $m, $mm)) {
+			$mods[] = $mm[1];
+			$m = $mm[2];
+			continue;
+		}
+		break;
 	}
 
 	// Normalize base key
@@ -92,7 +105,10 @@ function humanize(string $macro): ?string {
 	$baseUpper = strtoupper($base);
 	$baseOut = $map[$baseUpper] ?? $base;
 
-	$modsPretty = array_map(fn($x)=>['C'=>'Ctrl','S'=>'Shift','A'=>'Alt','G'=>'Cmd'][$x], $mods);
+	// Normalize display order: Ctrl, Alt, Shift, Cmd
+	$order = ['C'=>1,'A'=>2,'S'=>3,'G'=>4];
+	usort($mods, function($a,$b) use ($order){ return ($order[$a] ?? 99) <=> ($order[$b] ?? 99); });
+	$modsPretty = array_map(fn($x)=>['C'=>'Ctrl','S'=>'Shift','A'=>'Alt','G'=>'Cmd'][$x] ?? $x, $mods);
 	$prefix = $modsPretty ? implode('+', $modsPretty) . '+' : '';
 	return $prefix . $baseOut;
 }
