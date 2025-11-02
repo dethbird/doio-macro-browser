@@ -386,33 +386,111 @@ $app->post('/api/profiles/{id}/import', function (Request $request, Response $re
 			}
 		}
 
-		// Encoders mapping if provided
+		// Encoders mapping if provided (support multiple JSON shapes)
 		$enc = $json['encoders'] ?? null;
+		$encInserts = 0;
 		if (is_array($enc)) {
-			// Expect an indexed array of 3 encoders with left/right arrays of length >=4
-			$map = [0=>'topRight', 1=>'topLeft', 2=>'big']; // per device note
 			$upEnc = $pdo->prepare('INSERT INTO encoders(profile_id, layer, encoder, direction, macro)
 				VALUES(:pid,:layer,:enc,:dir,:macro)
 				ON CONFLICT(profile_id, layer, encoder, direction) DO UPDATE SET macro=excluded.macro');
-			foreach ($map as $idx=>$name) {
-				if (!isset($enc[$idx]) || !is_array($enc[$idx])) continue;
-				$item = $enc[$idx];
-				$left = $item['left'] ?? null; $right = $item['right'] ?? null;
-				for ($layer = 0; $layer < 4; $layer++) {
-					$lMacro = is_array($left) ? trim((string)($left[$layer] ?? '')) : '';
-					$rMacro = is_array($right) ? trim((string)($right[$layer] ?? '')) : '';
-					if ($lMacro !== '') {
-						$upEnc->execute([':pid'=>$profileId, ':layer'=>$layer, ':enc'=>$name, ':dir'=>'left', ':macro'=>$lMacro]);
+
+			$validNames = ['topLeft','topRight','big'];
+			$dirKeysLeft = ['left','ccw','counterClockwise','counter_clockwise','anticlockwise'];
+			$dirKeysRight = ['right','cw','clockwise'];
+
+			$normalizeLayers = function($arr): array {
+				// Return a 4-length array by layer index if possible
+				if (!is_array($arr)) return [null,null,null,null];
+				// Numeric array already
+				if (array_keys($arr) === range(0, count($arr)-1)) {
+					return [ $arr[0] ?? null, $arr[1] ?? null, $arr[2] ?? null, $arr[3] ?? null ];
+				}
+				// Assoc with numeric-string keys
+				$out = [null,null,null,null];
+				for ($i=0; $i<4; $i++) {
+					$keyNum = (string)$i;
+					$keyLayer = 'layer'.$i;
+					if (array_key_exists($i, $arr)) $out[$i] = $arr[$i];
+					elseif (array_key_exists($keyNum, $arr)) $out[$i] = $arr[$keyNum];
+					elseif (array_key_exists($keyLayer, $arr)) $out[$i] = $arr[$keyLayer];
+				}
+				return $out;
+			};
+
+			$extractDir = function(array $item, array $keys) {
+				foreach ($keys as $k) {
+					if (isset($item[$k])) return $item[$k];
+				}
+				return null;
+			};
+
+			$process = function(array $spec) use ($upEnc, $profileId, $normalizeLayers, $extractDir, $dirKeysLeft, $dirKeysRight, &$encInserts) {
+				foreach ($spec as $name => $item) {
+					if (!is_array($item)) continue;
+					$leftRaw = $extractDir($item, $dirKeysLeft);
+					$rightRaw = $extractDir($item, $dirKeysRight);
+
+					// Support DOIO shape: per-encoder is an array of 4 [left,right] pairs
+					if ($leftRaw === null && $rightRaw === null && array_keys($item) === range(0, count($item)-1) && isset($item[0]) && is_array($item[0])) {
+						$L = [null,null,null,null];
+						$R = [null,null,null,null];
+						for ($i=0; $i<4; $i++) {
+							$row = $item[$i] ?? null;
+							if (is_array($row)) {
+								$L[$i] = $row[0] ?? null;
+								$R[$i] = $row[1] ?? null;
+							}
+						}
+						$leftRaw = $L; $rightRaw = $R;
 					}
-					if ($rMacro !== '') {
-						$upEnc->execute([':pid'=>$profileId, ':layer'=>$layer, ':enc'=>$name, ':dir'=>'right', ':macro'=>$rMacro]);
+					$left = $normalizeLayers($leftRaw);
+					$right = $normalizeLayers($rightRaw);
+					for ($layer = 0; $layer < 4; $layer++) {
+						$lMacro = trim((string)($left[$layer] ?? ''));
+						$rMacro = trim((string)($right[$layer] ?? ''));
+						if ($lMacro !== '' && strtoupper($lMacro) !== 'KC_NO') {
+							$upEnc->execute([':pid'=>$profileId, ':layer'=>$layer, ':enc'=>$name, ':dir'=>'left', ':macro'=>$lMacro]);
+							$encInserts++;
+						}
+						if ($rMacro !== '' && strtoupper($rMacro) !== 'KC_NO') {
+							$upEnc->execute([':pid'=>$profileId, ':layer'=>$layer, ':enc'=>$name, ':dir'=>'right', ':macro'=>$rMacro]);
+							$encInserts++;
+						}
 					}
+				}
+			};
+
+			if (array_keys($enc) !== range(0, count($enc)-1)) {
+				// Associative: expect keys like topLeft/topRight/big
+				$spec = [];
+				foreach ($validNames as $n) {
+					if (isset($enc[$n])) $spec[$n] = $enc[$n];
+				}
+				if ($spec) $process($spec);
+			} else {
+				// Numeric array of 3 encoders; try two known index->name maps, pick the one with more entries
+				$map1 = [0=>'topRight', 1=>'topLeft', 2=>'big'];
+				$map2 = [0=>'topLeft', 1=>'topRight', 2=>'big'];
+				$run = function($map) use ($enc, $process) {
+					$spec = [];
+					foreach ($map as $idx => $name) {
+						if (isset($enc[$idx]) && is_array($enc[$idx])) $spec[$name] = $enc[$idx];
+					}
+					return $spec;
+				};
+				$before = $encInserts;
+				$spec1 = $run($map1); $process($spec1);
+				$c1 = $encInserts - $before;
+				if ($c1 === 0) {
+					// Try alternative mapping
+					$encInserts = $before; // reset inserts count effect of previous attempt
+					$spec2 = $run($map2); $process($spec2);
 				}
 			}
 		}
 
 		$pdo->commit();
-		return json($response, ['ok'=>true]);
+		return json($response, ['ok'=>true, 'encodersInserted'=>$encInserts]);
 	} catch (Throwable $e) {
 		if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
 		return error($response, 'Import failed', 500, ['details'=>$e->getMessage()]);
@@ -447,7 +525,10 @@ $app->get('/api/profiles/{id}/frames', function (Request $request, Response $res
 		];
 		foreach ($stmt as $row) {
 			$l = (int)$row['layer']; $e = $row['encoder']; $d = $row['direction'];
-			if (isset($enc[$e][$d][$l])) $enc[$e][$d][$l] = $row['macro'];
+			// Note: isset() returns false for null values; use array_key_exists for index presence
+			if (isset($enc[$e][$d]) && array_key_exists($l, $enc[$e][$d])) {
+				$enc[$e][$d][$l] = $row['macro'];
+			}
 		}
 
 		// Positions: grid indices and knobs (big knob is 14)
@@ -489,6 +570,32 @@ $app->get('/api/profiles/{id}/frames', function (Request $request, Response $res
 		return json($response, $frames);
 	} catch (Throwable $e) {
 		return error($response, 'Failed to build frames', 500, ['details'=>$e->getMessage()]);
+	}
+});
+
+// Debug: inspect encoders stored for a profile (raw rows and normalized shape)
+$app->get('/api/profiles/{id}/encoders', function (Request $request, Response $response, array $args): Response {
+	$profileId = (int)($args['id'] ?? 0);
+	if ($profileId <= 0) return error($response, 'Invalid profile id', 400);
+	try {
+		$pdo = db();
+		$rows = $pdo->prepare('SELECT layer, encoder, direction, macro FROM encoders WHERE profile_id = :pid ORDER BY layer, encoder, direction');
+		$rows->execute([':pid'=>$profileId]);
+		$list = $rows->fetchAll();
+		$enc = [
+			'topLeft' => ['left'=>[null,null,null,null], 'right'=>[null,null,null,null]],
+			'topRight'=> ['left'=>[null,null,null,null], 'right'=>[null,null,null,null]],
+			'big'     => ['left'=>[null,null,null,null], 'right'=>[null,null,null,null]],
+		];
+		foreach ($list as $row) {
+			$l = (int)$row['layer']; $e = $row['encoder']; $d = $row['direction'];
+			if (isset($enc[$e][$d]) && array_key_exists($l, $enc[$e][$d])) {
+				$enc[$e][$d][$l] = $row['macro'];
+			}
+		}
+		return json($response, ['rows'=>$list, 'normalized'=>$enc]);
+	} catch (Throwable $e) {
+		return error($response, 'Failed to list encoders', 500, ['details'=>$e->getMessage()]);
 	}
 });
 

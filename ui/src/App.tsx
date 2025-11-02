@@ -180,8 +180,11 @@ function OnboardingPanel({
       })
       const data = await res.json()
       if (!res.ok || data?.error) throw new Error(data?.error || `HTTP ${res.status}`)
-      setNotice('Import successful')
+      const encInfo = typeof data?.encodersInserted === 'number' ? ` (encoders: ${data.encodersInserted})` : ''
+      setNotice('Import successful' + encInfo)
       setTimeout(()=>setNotice(null), 2500)
+      // Ensure the imported-to profile is selected
+      setSelectedProfileId(pid)
       await onImport(pid)
     } catch (e:any) {
       alert(`Import failed: ${e?.message || e}`)
