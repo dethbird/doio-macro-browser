@@ -1,4 +1,28 @@
 DirectoryIndex index.php
+Options -Indexes
 
-# Route any non-existent paths to index.php (Apache 2.4+)
-FallbackResource /index.php
+<IfModule mod_rewrite.c>
+		RewriteEngine On
+		RewriteBase /
+
+		# Serve existing files or directories as-is
+		RewriteCond %{REQUEST_FILENAME} -f [OR]
+		RewriteCond %{REQUEST_FILENAME} -d
+		RewriteRule ^ - [L]
+
+		# Allow direct access to built static assets (Vite build outputs under /app)
+		RewriteRule ^app/ - [L]
+		RewriteRule ^assets/ - [L]
+		RewriteRule ^favicon\.ico$ - [L]
+
+		# Forward everything else to the Slim front controller
+		RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Deny access to sensitive files
+<Files ".env">
+	Require all denied
+</Files>
+<FilesMatch "^(composer\.(json|lock)|package\.json|webpack\..*|vite\..*|\.(sh|sql)|README|LICENSE)$">
+	Require all denied
+</FilesMatch>
