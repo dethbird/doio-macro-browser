@@ -17,6 +17,8 @@ if (!is_dir($dbDir) && !mkdir($dbDir, 0775, true) && !is_dir($dbDir)) {
     fwrite(STDERR, "Failed to create directory: $dbDir\n");
     exit(1);
 }
+// Try to ensure directory is writable in dev environments
+@chmod($dbDir, 0775);
 
 $schema = file_get_contents($schemaFile);
 if ($schema === false) {
@@ -45,6 +47,8 @@ try {
         }
         $db->close();
     }
+    // Loosen file permissions for local dev so web server user can write
+    @chmod($dbPath, 0664);
     echo "Initialized SQLite DB at: $dbPath\n";
 } catch (Throwable $e) {
     fwrite(STDERR, "DB init failed: " . $e->getMessage() . "\n");
