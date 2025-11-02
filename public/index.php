@@ -16,6 +16,37 @@ if (!file_exists($autoload)) {
 }
 require $autoload;
 
+// Start session for basic auth gate
+if (session_status() === PHP_SESSION_NONE) {
+	session_start();
+}
+
+// Minimal .env loader (require copying shadow.env -> .env)
+function load_env(string $path): array {
+	$out = [];
+	if (!is_file($path)) return $out;
+	$lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+	foreach ($lines as $line) {
+		$line = trim($line);
+		if ($line === '' || $line[0] === '#') continue;
+		// KEY=VALUE (VALUE may be quoted)
+		if (preg_match('/^([A-Z0-9_]+)\s*=\s*(.*)$/i', $line, $m)) {
+			$key = $m[1];
+			$val = $m[2];
+			// Strip surrounding quotes
+			if ((str_starts_with($val, '"') && str_ends_with($val, '"')) || (str_starts_with($val, "'") && str_ends_with($val, "'"))) {
+				$val = substr($val, 1, -1);
+			}
+			$out[$key] = $val;
+		}
+	}
+	return $out;
+}
+
+// Load env once
+$ENV = load_env(__DIR__ . '/../.env');
+$APP_PASSWORD = isset($ENV['APP_PASSWORD']) && $ENV['APP_PASSWORD'] !== '' ? (string)$ENV['APP_PASSWORD'] : null;
+
 // Create App
 $app = AppFactory::create();
 
@@ -189,6 +220,37 @@ $twig = Twig::create(__DIR__ . '/../templates', [
 ]);
 $app->add(TwigMiddleware::create($app, $twig));
 
+// --- Auth middleware: require session login across app ---
+$app->add(function (Request $request, RequestHandler $handler) use ($APP_PASSWORD): Response {
+	$path = $request->getUri()->getPath();
+
+	// If .env missing or APP_PASSWORD not set, show a clear error
+	if ($APP_PASSWORD === null) {
+		$resp = new \Slim\Psr7\Response(500);
+		$resp->getBody()->write("Configuration error: .env missing or APP_PASSWORD not set.\n\nPlease copy shadow.env to .env in the project root and set APP_PASSWORD=your_password.");
+		return $resp->withHeader('Content-Type', 'text/plain');
+	}
+
+	// Allow login/logout endpoints without prior auth
+	if ($path === '/login' || $path === '/logout') {
+		return $handler->handle($request);
+	}
+
+	$authed = !empty($_SESSION['authed']);
+	if ($authed) {
+		return $handler->handle($request);
+	}
+
+	// Not authed: APIs get 401 JSON, others redirect to /login
+	if (str_starts_with($path, '/api')) {
+		$resp = new \Slim\Psr7\Response(401);
+		$resp->getBody()->write(json_encode(['error' => 'Unauthorized'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+		return $resp->withHeader('Content-Type', 'application/json');
+	}
+	$resp = new \Slim\Psr7\Response(302);
+	return $resp->withHeader('Location', '/login');
+});
+
 // React mount page at root
 $app->get('/', function (Request $request, Response $response) use ($twig): Response {
 	// In the future, detect a Vite manifest in /public/app/manifest.json
@@ -199,6 +261,56 @@ $app->get('/', function (Request $request, Response $response) use ($twig): Resp
 		'js' => $assets['js'] ?? null,
 		'css' => $assets['css'] ?? [],
 	]);
+});
+
+// Login form (GET)
+$app->get('/login', function (Request $request, Response $response) use ($twig): Response {
+	if (!empty($_SESSION['authed'])) {
+		return $response->withHeader('Location', '/')->withStatus(302);
+	}
+	return $twig->render($response, 'login.twig', [
+		'title' => 'Login',
+		'error' => null,
+	]);
+});
+
+// Login submit (POST) accepts form or JSON { password }
+$app->post('/login', function (Request $request, Response $response) use ($twig, $APP_PASSWORD): Response {
+	$password = null;
+	$ctype = $request->getHeaderLine('Content-Type');
+	$raw = (string)$request->getBody();
+	if (stripos($ctype, 'application/json') !== false) {
+		$data = json_decode($raw, true);
+		$password = is_array($data) ? ($data['password'] ?? null) : null;
+	} else {
+		$parsed = $request->getParsedBody();
+		if (is_array($parsed)) $password = $parsed['password'] ?? null;
+	}
+	$ok = is_string($password) && $APP_PASSWORD !== null && hash_equals($APP_PASSWORD, $password);
+	if ($ok) {
+		$_SESSION['authed'] = true;
+		return $response->withHeader('Location', '/')->withStatus(302);
+	}
+	// If API-style login attempt
+	if (str_starts_with($request->getUri()->getPath(), '/api')) {
+		return error($response, 'Unauthorized', 401);
+	}
+	// Re-render form with error
+	return $twig->render($response, 'login.twig', [
+		'title' => 'Login',
+		'error' => 'Invalid password',
+	])->withStatus(401);
+});
+
+// Logout
+$app->get('/logout', function (Request $request, Response $response): Response {
+	$_SESSION = [];
+	if (ini_get('session.use_cookies')) {
+		$params = session_get_cookie_params();
+		setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+	}
+	session_destroy();
+	return $response->withHeader('Location', '/login')->withStatus(302);
 });
 
 // List translations with optional filters: app, macro (exact), q (search)
