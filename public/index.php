@@ -116,6 +116,45 @@ function resolve_label(PDO $pdo, string $macro, ?string $app): ?string {
 	return humanize($macro);
 }
 
+/**
+ * Read Vite manifest and return asset URLs for the given entry (relative to /public/app).
+ * Example entry: 'src/main.tsx'
+ */
+function vite_assets(string $entry = 'src/main.tsx'): array {
+	$manifestPath = __DIR__ . '/app/manifest.json';
+	if (!is_file($manifestPath)) {
+		// Vite may place manifest under .vite/manifest.json depending on config/version
+		$alt = __DIR__ . '/app/.vite/manifest.json';
+		if (is_file($alt)) {
+			$manifestPath = $alt;
+		}
+	}
+	$baseUrl = '/app/';
+	if (!is_file($manifestPath)) return ['js' => null, 'css' => []];
+	$json = json_decode((string)file_get_contents($manifestPath), true);
+	if (!is_array($json)) return ['js' => null, 'css' => []];
+
+	// Prefer explicit entry if present, else find first isEntry
+	$item = $json[$entry] ?? null;
+	if (!$item) {
+		foreach ($json as $k => $v) {
+			if (is_array($v) && !empty($v['isEntry']) && isset($v['file'])) {
+				$item = $v;
+				break;
+			}
+		}
+	}
+	if (!$item) return ['js' => null, 'css' => []];
+	$js = isset($item['file']) ? $baseUrl . ltrim($item['file'], '/') : null;
+	$css = [];
+	if (!empty($item['css']) && is_array($item['css'])) {
+		foreach ($item['css'] as $c) {
+			$css[] = $baseUrl . ltrim($c, '/');
+		}
+	}
+	return ['js' => $js, 'css' => $css];
+}
+
 // Health check
 $app->get('/api/health', function (Request $request, Response $response): Response {
 	return json($response, ['ok' => true, 'ts' => time()]);
@@ -133,9 +172,11 @@ $app->add(TwigMiddleware::create($app, $twig));
 $app->get('/', function (Request $request, Response $response) use ($twig): Response {
 	// In the future, detect a Vite manifest in /public/app/manifest.json
 	// and pass asset URLs into the template.
+	$assets = vite_assets('src/main.tsx');
 	return $twig->render($response, 'app.twig', [
 		'title' => 'DOIO Macro Browser',
-		// 'js' => '/app/assets/index.js', 'css' => '/app/assets/index.css'
+		'js' => $assets['js'] ?? null,
+		'css' => $assets['css'] ?? [],
 	]);
 });
 
