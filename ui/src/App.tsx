@@ -352,29 +352,38 @@ function FrameView({ frame }: { frame: Frame }) {
 }
 
 function KnobView({ name, data, meta }:{ name:string, data: { onPress?: string|null, dialLeft?: string|null, dialRight?: string|null }, meta?: { onPress?: {hotkey?:string|null, source?: string|null}, dialLeft?: {hotkey?:string|null, source?: string|null}, dialRight?: {hotkey?:string|null, source?: string|null} } }) {
-  const Item = ({label, value, hotkey, source}:{label:string, value?:string|null, hotkey?:string|null, source?: string|null}) => (
-    <div className="field is-horizontal">
-      <div className="field-label is-normal" style={{ minWidth: '90px' }}>
-        <label className="label is-small">{label}</label>
-      </div>
-      <div className="field-body">
-        <div className="field">
-          <div className="control">
-            <div className="box knob-box">
-              <span className={source && source !== 'humanize' ? 'subtitle is-6' : ''}>{value ?? '—'}</span>
-              {hotkey && <span className="is-size-7 has-text-grey">{hotkey}</span>}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
   return (
     <div className="box">
       <h4 className="title is-6" style={{ marginTop: 0 }}>{name}</h4>
-      <Item label="Press" value={data.onPress} hotkey={meta?.onPress?.hotkey ?? undefined} source={meta?.onPress?.source ?? undefined} />
-      <Item label="Dial Left" value={data.dialLeft} hotkey={meta?.dialLeft?.hotkey ?? undefined} source={meta?.dialLeft?.source ?? undefined} />
-      <Item label="Dial Right" value={data.dialRight} hotkey={meta?.dialRight?.hotkey ?? undefined} source={meta?.dialRight?.source ?? undefined} />
+
+      {/* Dials side-by-side, styled like keys */}
+      <div className="columns is-mobile compact-keys" style={{ maxWidth: '600px' }}>
+        <div className="column is-half">
+          <div className="box has-text-centered key-box">
+            <div className="box-caption">Dial Left</div>
+            <div className={meta?.dialLeft?.source && meta?.dialLeft?.source !== 'humanize' ? 'subtitle is-6' : ''}>{data.dialLeft ?? '—'}</div>
+            {meta?.dialLeft?.hotkey && (
+              <div className="is-size-7 has-text-grey" style={{ marginTop: '0.1rem' }}>{meta.dialLeft.hotkey}</div>
+            )}
+          </div>
+        </div>
+        <div className="column is-half">
+          <div className="box has-text-centered key-box">
+            <div className="box-caption">Dial Right</div>
+            <div className={meta?.dialRight?.source && meta?.dialRight?.source !== 'humanize' ? 'subtitle is-6' : ''}>{data.dialRight ?? '—'}</div>
+            {meta?.dialRight?.hotkey && (
+              <div className="is-size-7 has-text-grey" style={{ marginTop: '0.1rem' }}>{meta.dialRight.hotkey}</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Press below as a single compact row */}
+      <div className="box-caption">Press</div>
+      <div className="box knob-box">
+        <span className={meta?.onPress?.source && meta?.onPress?.source !== 'humanize' ? 'subtitle is-6' : ''}>{data.onPress ?? '—'}</span>
+        {meta?.onPress?.hotkey && <span className="is-size-7 has-text-grey">{meta.onPress.hotkey}</span>}
+      </div>
     </div>
   )
 }
