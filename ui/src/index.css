@@ -54,3 +54,6 @@ body {
   color: #757575;
   margin-bottom: 2px;
 }
+
+/* Knob row heading spacing */
+.knob-row-title { margin: 0 0 0.25rem 0; }
