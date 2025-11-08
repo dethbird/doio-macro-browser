@@ -327,14 +327,14 @@ function FrameView({ frame }: { frame: Frame }) {
   return (
     <div className="columns" style={{ marginTop: '1rem' }}>
       <div className="column">
-        <h3 className="title is-4">🎹 Keys</h3>
-        <div className="columns is-multiline is-mobile" style={{ maxWidth: '600px' }}>
+        <h3 className="title is-4 compact-keys-heading">🎹 Keys</h3>
+        <div className="columns is-multiline is-mobile compact-keys" style={{ maxWidth: '600px' }}>
           {k.map((label, i) => (
             <div key={i} className="column is-one-quarter">
-              <div className="box has-text-centered" style={{ minHeight: '72px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', border: '1px solid purple' }}>
+              <div className="box has-text-centered key-box">
                 <div className={km[i]?.source && km[i]?.source !== 'humanize' ? 'subtitle is-6' : ''}>{label ?? '—'}</div>
                 {km[i]?.hotkey && (
-                  <div className="is-size-7 has-text-grey" style={{ marginTop: '0.25rem' }}>{km[i]?.hotkey}</div>
+                  <div className="is-size-7 has-text-grey" style={{ marginTop: '0.1rem' }}>{km[i]?.hotkey}</div>
                 )}
               </div>
             </div>
@@ -360,7 +360,7 @@ function KnobView({ name, data, meta }:{ name:string, data: { onPress?: string|n
       <div className="field-body">
         <div className="field">
           <div className="control">
-            <div className="box" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', gap: '12px', minWidth: '240px', border: '1px solid purple' }}>
+            <div className="box knob-box">
               <span className={source && source !== 'humanize' ? 'subtitle is-6' : ''}>{value ?? '—'}</span>
               {hotkey && <span className="is-size-7 has-text-grey">{hotkey}</span>}
             </div>

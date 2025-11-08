@@ -2,3 +2,48 @@
 html, body, #root {
   height: 100%;
 }
+
+/* Compact layout overrides */
+body {
+  --compact-gap: 0.35rem;
+}
+
+/* Reduce vertical padding of Bulma .section */
+.section {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* Tighter columns spacing */
+.columns.is-mobile.is-multiline.compact-keys {
+  margin-left: calc(-1 * var(--compact-gap));
+  margin-right: calc(-1 * var(--compact-gap));
+}
+.columns.is-mobile.is-multiline.compact-keys > .column {
+  padding: var(--compact-gap);
+}
+
+/* Key box compact style */
+.key-box {
+  padding: 4px 4px !important; /* override Bulma .box */
+  min-height: 56px;
+  border: 1px solid purple;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Reduce padding for knob display boxes */
+.knob-box {
+  padding: 4px 8px !important;
+  border: 1px solid purple;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 200px;
+}
+
+/* Smaller heading sizes for compactness */
+.compact-keys-heading { margin-bottom: 0.25rem; }
