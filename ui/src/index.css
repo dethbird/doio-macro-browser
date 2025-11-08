@@ -3,6 +3,11 @@ html, body, #root {
   height: 100%;
 }
 
+/* Enable vertical panning while allowing horizontal swipe detection */
+.swipe-area {
+  touch-action: pan-y;
+}
+
 /* Compact layout overrides */
 body {
   --compact-gap: 0.35rem;

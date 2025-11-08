@@ -42,6 +42,8 @@ export default function App() {
   const [busy, setBusy] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [showSetupPanel, setShowSetupPanel] = useState(false)
+  // swipe tracking
+  const [swipe, setSwipe] = useState<{x:number,y:number,t:number}|null>(null)
 
   useEffect(() => {
     if (profiles.length && profileId == null) setProfileId(profiles[0].id)
@@ -77,6 +79,31 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // touch swipe handlers (left/right) on mobile/tablet
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return
+    const tag = (e.target as HTMLElement)?.tagName
+    if (tag && ['INPUT','TEXTAREA','SELECT','BUTTON'].includes(tag)) return
+    const t = e.touches[0]
+    setSwipe({ x: t.clientX, y: t.clientY, t: Date.now() })
+  }
+  const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!swipe) return
+    const t0 = swipe
+    setSwipe(null)
+    if (e.changedTouches.length === 0) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - t0.x
+    const dy = t.clientY - t0.y
+    const dt = Date.now() - t0.t
+    const H = Math.abs(dx)
+    const V = Math.abs(dy)
+    if (dt <= 800 && H > 48 && V < 32) {
+      if (dx < 0) setLayer(l => (l + 1) % 4) // swipe left -> next layer
+      else setLayer(l => (l + 3) % 4) // swipe right -> prev layer
+    }
+  }
 
   return (
     <section className="section">
@@ -160,7 +187,9 @@ export default function App() {
       )}
 
       {frames && (
-        <FrameView frame={frames[layer]} />
+        <div className="swipe-area" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          <FrameView frame={frames[layer]} />
+        </div>
       )}
       </div>
     </section>
@@ -341,7 +370,7 @@ function FrameView({ frame }: { frame: Frame }) {
           ))}
         </div>
       </div>
-      <div className="column with-vrule">
+      <div className="column">
         <h3 className="title is-4">🎛️ Knobs</h3>
         <KnobRow name="Top Left" data={frame.knobs.topLeft} meta={frame.knobs_meta?.topLeft} />
         <KnobRow name="Top Right" data={frame.knobs.topRight} meta={frame.knobs_meta?.topRight} />
