@@ -8,6 +8,11 @@ html, body, #root {
   touch-action: pan-y;
 }
 
+/* Elements where swipe should be ignored */
+.no-swipe {
+  touch-action: auto; /* allow normal interactions */
+}
+
 /* Compact layout overrides */
 body {
   --compact-gap: 0.35rem;

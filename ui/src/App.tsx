@@ -107,8 +107,8 @@ export default function App() {
 
   return (
     <section className="section">
-      <div className="container" style={{ maxWidth: '1024px' }}>
-        <nav className="level">
+      <div className="container swipe-area" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ maxWidth: '1024px' }}>
+        <nav className="level no-swipe">
           <div className="level-left">
             <div className="level-item">
               <h1 className="title is-3">DOIO Macro Browser</h1>
@@ -168,7 +168,7 @@ export default function App() {
             <label className="label" htmlFor="profile" style={{ marginBottom: 0 }}>Profile:</label>
           </div>
           <div className="control">
-            <div className="select">
+            <div className="select no-swipe">
               <select id="profile" value={profileId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setProfileId(Number(e.target.value))}>
                 {profiles.map((p: any) => (
                   <option key={p.id} value={p.id}>{p.name} · {p.app}</option>
@@ -187,9 +187,7 @@ export default function App() {
       )}
 
       {frames && (
-        <div className="swipe-area" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-          <FrameView frame={frames[layer]} />
-        </div>
+        <FrameView frame={frames[layer]} />
       )}
       </div>
     </section>
@@ -281,7 +279,7 @@ function OnboardingPanel({
   }
 
   return (
-    <div className="box">
+    <div className="box no-swipe">
       <h2 className="title is-5">Setup</h2>
       <div className="columns">
         <div className="column">
