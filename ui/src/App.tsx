@@ -341,7 +341,7 @@ function FrameView({ frame }: { frame: Frame }) {
           ))}
         </div>
       </div>
-      <div className="column">
+      <div className="column with-vrule">
         <h3 className="title is-4">🎛️ Knobs</h3>
         <KnobRow name="Top Left" data={frame.knobs.topLeft} meta={frame.knobs_meta?.topLeft} />
         <KnobRow name="Top Right" data={frame.knobs.topRight} meta={frame.knobs_meta?.topRight} />
