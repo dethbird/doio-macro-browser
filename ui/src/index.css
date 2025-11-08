@@ -57,3 +57,23 @@ body {
 
 /* Knob row heading spacing */
 .knob-row-title { margin: 0 0 0.25rem 0; }
+
+/* Big circular primary layer buttons */
+.nav-circle {
+  --nav-circle-size: 52px;
+  width: var(--nav-circle-size);
+  height: var(--nav-circle-size);
+  border-radius: 9999px;
+  padding: 0; /* ensure perfect circle */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.nav-layer-label {
+  margin: 0 0.6rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}

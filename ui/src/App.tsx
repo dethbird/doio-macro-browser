@@ -89,12 +89,12 @@ export default function App() {
           </div>
           <div className="level-right">
             <div className="level-item">
-              <button className="button is-light" onClick={()=>setShowSetupPanel(s=>!s)}>
+              <button className="button is-light is-small" onClick={()=>setShowSetupPanel(s=>!s)}>
                 {showSetupPanel ? 'Hide Setup' : 'Setup'}
               </button>
             </div>
             <div className="level-item">
-              <a href="/logout" className="button is-light" title="Sign out">Logout</a>
+              <a href="/logout" className="button is-light is-small" title="Sign out">Logout</a>
             </div>
           </div>
         </nav>
@@ -150,10 +150,10 @@ export default function App() {
             </div>
           </div>
           <div className="control is-expanded has-text-right">
-            <div className="buttons has-addons is-right">
-              <button className="button" onClick={()=>setLayer(l => (l + 3) % 4)}>&larr;</button>
-              <span className="title is-4" style={{ margin: '0 0.5rem', lineHeight: '1' }}>Layer {layer + 1}</span>
-              <button className="button" onClick={()=>setLayer(l => (l + 1) % 4)}>&rarr;</button>
+            <div className="is-flex is-align-items-center is-justify-content-flex-end" style={{ gap: '0.4rem' }}>
+              <button className="button is-link nav-circle" title="Previous Layer" onClick={()=>setLayer(l => (l + 3) % 4)}><strong>&larr;</strong></button>
+              <span className="title is-4 nav-layer-label">Layer {layer + 1}</span>
+              <button className="button is-link nav-circle" title="Next Layer" onClick={()=>setLayer(l => (l + 1) % 4)}><strong>&rarr;</strong></button>
             </div>
           </div>
         </div>
