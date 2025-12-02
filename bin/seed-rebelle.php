@@ -40,6 +40,8 @@ $items = [
     ['KC_L', 'Fill'],
     ['KC_I', 'Pick Color'],
     ['KC_W', 'Water'],
+    ['C(KC_SCLN)', 'Decrease Water'],
+    ['C(KC_QUOT)', 'Increase Water'],
     ['KC_Y', 'Dry'],
     ['KC_O', 'Blow'],
     ['KC_X', 'Mix Mode'],
