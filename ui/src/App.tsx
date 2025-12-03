@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import ProfileSelector from './components/ProfileSelector'
 import MacroDisplay from './components/MacroDisplay'
-import { Application, Profile } from './types'
+import MacroDisplayEdit from './components/MacroDisplayEdit'
+import type { Application, Profile } from './types'
 
 function App() {
   const [applications, setApplications] = useState<Application[]>([])
@@ -9,6 +10,7 @@ function App() {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
   const [profileJson, setProfileJson] = useState<unknown>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
 
   // Fetch applications and restore selection from localStorage
   useEffect(() => {
@@ -121,10 +123,26 @@ function App() {
           onProfileAdded={handleProfileAdded}
           onProfileUpdated={handleProfileUpdated}
         />
-        <MacroDisplay 
-          profileJson={profileJson} 
-          applicationId={selectedApplication?.id ?? null}
-        />
+        
+        {profileJson !== null && (
+          <div className="mb-4">
+            <button 
+              className={`button is-small ${isEditMode ? 'is-warning' : 'is-info'}`}
+              onClick={() => setIsEditMode(!isEditMode)}
+            >
+              {isEditMode ? 'View JSON' : 'Edit Translations'}
+            </button>
+          </div>
+        )}
+        
+        {isEditMode ? (
+          <MacroDisplayEdit 
+            profileJson={profileJson} 
+            applicationId={selectedApplication?.id ?? null}
+          />
+        ) : (
+          <MacroDisplay profileJson={profileJson} />
+        )}
       </div>
     </section>
   )
