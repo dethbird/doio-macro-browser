@@ -6,6 +6,7 @@ interface MacroDisplayEditProps {
   profileJson: unknown
   applicationId: number | null
   currentLayer: number
+  onSave?: () => void
 }
 
 // Layer index mapping for DOIO KB16
@@ -14,8 +15,44 @@ const LEFT_ENCODER_PRESS_INDEX = 4
 const RIGHT_ENCODER_PRESS_INDEX = 9
 const BIG_ENCODER_PRESS_INDEX = 14
 
-function MacroDisplayEdit({ profileJson, applicationId, currentLayer }: MacroDisplayEditProps) {
+// Styles for grid cells
+const cellStyle: React.CSSProperties = {
+  padding: '8px',
+  textAlign: 'center',
+  border: '1px solid #4a4a4a',
+  minHeight: '80px',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: '10px',
+  color: '#888',
+  marginBottom: '4px',
+}
+
+const inputStyle: React.CSSProperties = {
+  fontSize: '11px',
+  padding: '4px 6px',
+  backgroundColor: '#2b2b2b',
+  border: '1px solid #4a4a4a',
+  borderRadius: '3px',
+  color: '#fff',
+  width: '100%',
+  marginTop: '4px',
+}
+
+interface TranslationInfo {
+  generic: string | null
+  appSpecific: string | null
+}
+
+function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: MacroDisplayEditProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
+  const [overrides, setOverrides] = useState<Map<string, string>>(new Map())
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
   // Fetch translations when applicationId changes
   useEffect(() => {
@@ -25,9 +62,24 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer }: MacroDis
         .then(data => setTranslations(data))
         .catch(() => setTranslations([]))
     } else {
-      setTranslations([])
+      // Fetch generic translations only
+      fetch('/api/translations')
+        .then(res => res.json())
+        .then(data => setTranslations(data))
+        .catch(() => setTranslations([]))
     }
   }, [applicationId])
+
+  // Initialize overrides from app-specific translations
+  useEffect(() => {
+    const appOverrides = new Map<string, string>()
+    for (const t of translations) {
+      if (t.application_id !== null) {
+        appOverrides.set(t.via_macro, t.human_label)
+      }
+    }
+    setOverrides(appOverrides)
+  }, [translations])
 
   const parsedJson = useMemo(() => {
     if (!profileJson) return null
@@ -42,9 +94,8 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer }: MacroDis
     return profileJson as ViaProfile
   }, [profileJson])
 
-  // Create a lookup function for resolving macros
-  const resolveMacro = useMemo(() => {
-    // Build lookup maps
+  // Create lookup functions for translations
+  const getTranslationInfo = useMemo(() => {
     const appSpecific = new Map<string, string>()
     const generic = new Map<string, string>()
     
@@ -56,19 +107,64 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer }: MacroDis
       }
     }
     
-    return (macro: string): string | null => {
-      // 1. App-specific translation
-      const appLabel = appSpecific.get(macro)
-      if (appLabel) return appLabel
-      
-      // 2. Generic translation
-      const genericLabel = generic.get(macro)
-      if (genericLabel) return genericLabel
-      
-      // 3. Fallback to humanize
-      return humanize(macro)
-    }
+    return (macro: string): TranslationInfo => ({
+      generic: generic.get(macro) || null,
+      appSpecific: appSpecific.get(macro) || null,
+    })
   }, [translations])
+
+  const handleOverrideChange = (macro: string, value: string) => {
+    setOverrides(prev => {
+      const next = new Map(prev)
+      next.set(macro, value)
+      return next
+    })
+  }
+
+  const handleSave = async () => {
+    if (!applicationId) {
+      setSaveMessage('No application selected')
+      return
+    }
+
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    // Build translations object from overrides
+    const translationsToSave: Record<string, string> = {}
+    overrides.forEach((value, macro) => {
+      // Include all overrides (empty string will delete)
+      translationsToSave[macro] = value
+    })
+
+    try {
+      const res = await fetch('/api/translations/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          application_id: applicationId,
+          translations: translationsToSave
+        })
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setSaveMessage(`Saved ${data.saved} translation(s), removed ${data.deleted}`)
+        // Refresh translations
+        const refreshRes = await fetch(`/api/translations?application_id=${applicationId}`)
+        const refreshData = await refreshRes.json()
+        setTranslations(refreshData)
+        onSave?.()
+      } else {
+        setSaveMessage(`Error: ${data.error}`)
+      }
+    } catch (err) {
+      setSaveMessage('Failed to save translations')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   if (!parsedJson) {
     return (
@@ -96,101 +192,122 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer }: MacroDis
   const rightEncoderTurn = parsedJson.encoders?.[1]?.[currentLayer] || ['KC_NO', 'KC_NO']
   const bigEncoderTurn = parsedJson.encoders?.[2]?.[currentLayer] || ['KC_NO', 'KC_NO']
 
+  // Helper to render a cell with translation info and input
+  const renderEditCell = (macro: string, bgColor = '#363636') => {
+    const info = getTranslationInfo(macro)
+    const humanized = humanize(macro)
+    const currentOverride = overrides.get(macro) ?? ''
+    
+    return (
+      <div style={{ ...cellStyle, backgroundColor: bgColor }}>
+        {info.generic && (
+          <div className="has-text-light" style={{ fontSize: '12px' }}>
+            {info.generic}
+          </div>
+        )}
+        <div style={labelStyle}>
+          {humanized || '—'}
+        </div>
+        <input
+          type="text"
+          style={inputStyle}
+          placeholder={info.generic || humanized || 'Override...'}
+          value={currentOverride}
+          onChange={(e) => handleOverrideChange(macro, e.target.value)}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="box has-background-dark">
-      <h3 className="title is-5 has-text-light mb-4">
-        {parsedJson.name} - Layer {currentLayer + 1}
-      </h3>
-      
-      {/* Buttons */}
-      <div className="mb-5">
-        <h4 className="title is-6 has-text-info">Buttons</h4>
-        <div className="columns is-multiline">
-          {buttons.map((macro, idx) => {
-            const label = resolveMacro(macro)
-            if (!label) return null // Skip KC_NO
-            return (
-              <div key={idx} className="column is-one-quarter">
-                <div className="notification is-dark p-2">
-                  <p className="is-size-7 has-text-grey-light">Button {idx + 1}</p>
-                  <p className="has-text-weight-bold has-text-light">{label}</p>
-                  <p className="is-size-7 has-text-grey">{humanize(macro) || macro}</p>
-                </div>
-              </div>
-            )
-          })}
+      <div className="is-flex is-justify-content-space-between is-align-items-center mb-4">
+        <h3 className="title is-5 has-text-light mb-0">
+          {parsedJson.name} - Layer {currentLayer + 1} (Edit)
+        </h3>
+        <div className="is-flex is-align-items-center">
+          {saveMessage && (
+            <span className={`mr-3 is-size-7 ${saveMessage.startsWith('Error') ? 'has-text-danger' : 'has-text-success'}`}>
+              {saveMessage}
+            </span>
+          )}
+          <button
+            className={`button is-small is-success ${isSaving ? 'is-loading' : ''}`}
+            onClick={handleSave}
+            disabled={isSaving || !applicationId}
+          >
+            Save Translations
+          </button>
         </div>
       </div>
       
-      {/* Encoders */}
-      <div className="mt-5">
-        <h4 className="title is-6 has-text-warning">Encoders</h4>
-        <div className="columns">
-          {/* Left Encoder */}
-          <div className="column is-one-third">
-            <div className="notification is-dark p-3">
-              <p className="has-text-light mb-2"><strong>Left Encoder</strong></p>
-              <div className="mb-2">
-                <p className="is-size-7 has-text-grey-light">Press</p>
-                <p className="has-text-light">{resolveMacro(leftEncoderPress) || '—'}</p>
-                <p className="is-size-7 has-text-grey">{humanize(leftEncoderPress) || leftEncoderPress}</p>
-              </div>
-              <div className="is-flex is-justify-content-space-between">
-                <div>
-                  <p className="is-size-7 has-text-grey-light">◀ Turn Left</p>
-                  <p className="is-size-7 has-text-light">{resolveMacro(leftEncoderTurn[0]) || '—'}</p>
-                </div>
-                <div>
-                  <p className="is-size-7 has-text-grey-light">Turn Right ▶</p>
-                  <p className="is-size-7 has-text-light">{resolveMacro(leftEncoderTurn[1]) || '—'}</p>
-                </div>
-              </div>
+      {/* Buttons - 4x4 grid */}
+      <div className="mb-5">
+        <h4 className="title is-6 has-text-info mb-3">Buttons</h4>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(4, 1fr)', 
+          gap: '4px',
+          backgroundColor: '#2b2b2b',
+          padding: '8px',
+          borderRadius: '4px'
+        }}>
+          {buttons.map((macro, idx) => (
+            <div key={idx}>
+              {renderEditCell(macro)}
             </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Encoders - 3 rows x 4 columns (Name, Left Turn, Right Turn, Press) */}
+      <div>
+        <h4 className="title is-6 has-text-warning mb-3">Encoders</h4>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'auto 1fr 1fr 1fr', 
+          gap: '4px',
+          backgroundColor: '#2b2b2b',
+          padding: '8px',
+          borderRadius: '4px'
+        }}>
+          {/* Header row */}
+          <div style={{ ...cellStyle, backgroundColor: '#1f1f1f', minHeight: '40px' }}>
+            <span className="has-text-grey-light" style={{ fontSize: '11px' }}></span>
           </div>
+          <div style={{ ...cellStyle, backgroundColor: '#1f1f1f', minHeight: '40px' }}>
+            <span className="has-text-grey-light" style={{ fontSize: '11px' }}>◀ Left</span>
+          </div>
+          <div style={{ ...cellStyle, backgroundColor: '#1f1f1f', minHeight: '40px' }}>
+            <span className="has-text-grey-light" style={{ fontSize: '11px' }}>Right ▶</span>
+          </div>
+          <div style={{ ...cellStyle, backgroundColor: '#1f1f1f', minHeight: '40px' }}>
+            <span className="has-text-grey-light" style={{ fontSize: '11px' }}>Press</span>
+          </div>
+          
+          {/* Left Encoder */}
+          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
+            <span className="has-text-info" style={{ fontSize: '11px', fontWeight: 'bold' }}>Left</span>
+          </div>
+          {renderEditCell(leftEncoderTurn[0])}
+          {renderEditCell(leftEncoderTurn[1])}
+          {renderEditCell(leftEncoderPress)}
           
           {/* Right Encoder */}
-          <div className="column is-one-third">
-            <div className="notification is-dark p-3">
-              <p className="has-text-light mb-2"><strong>Right Encoder</strong></p>
-              <div className="mb-2">
-                <p className="is-size-7 has-text-grey-light">Press</p>
-                <p className="has-text-light">{resolveMacro(rightEncoderPress) || '—'}</p>
-                <p className="is-size-7 has-text-grey">{humanize(rightEncoderPress) || rightEncoderPress}</p>
-              </div>
-              <div className="is-flex is-justify-content-space-between">
-                <div>
-                  <p className="is-size-7 has-text-grey-light">◀ Turn Left</p>
-                  <p className="is-size-7 has-text-light">{resolveMacro(rightEncoderTurn[0]) || '—'}</p>
-                </div>
-                <div>
-                  <p className="is-size-7 has-text-grey-light">Turn Right ▶</p>
-                  <p className="is-size-7 has-text-light">{resolveMacro(rightEncoderTurn[1]) || '—'}</p>
-                </div>
-              </div>
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
+            <span className="has-text-info" style={{ fontSize: '11px', fontWeight: 'bold' }}>Right</span>
           </div>
+          {renderEditCell(rightEncoderTurn[0])}
+          {renderEditCell(rightEncoderTurn[1])}
+          {renderEditCell(rightEncoderPress)}
           
           {/* Big Encoder */}
-          <div className="column is-one-third">
-            <div className="notification is-dark p-3">
-              <p className="has-text-light mb-2"><strong>Big Encoder</strong></p>
-              <div className="mb-2">
-                <p className="is-size-7 has-text-grey-light">Press</p>
-                <p className="has-text-light">{resolveMacro(bigEncoderPress) || '—'}</p>
-                <p className="is-size-7 has-text-grey">{humanize(bigEncoderPress) || bigEncoderPress}</p>
-              </div>
-              <div className="is-flex is-justify-content-space-between">
-                <div>
-                  <p className="is-size-7 has-text-grey-light">◀ Turn Left</p>
-                  <p className="is-size-7 has-text-light">{resolveMacro(bigEncoderTurn[0]) || '—'}</p>
-                </div>
-                <div>
-                  <p className="is-size-7 has-text-grey-light">Turn Right ▶</p>
-                  <p className="is-size-7 has-text-light">{resolveMacro(bigEncoderTurn[1]) || '—'}</p>
-                </div>
-              </div>
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
+            <span className="has-text-warning" style={{ fontSize: '11px', fontWeight: 'bold' }}>Big</span>
           </div>
+          {renderEditCell(bigEncoderTurn[0])}
+          {renderEditCell(bigEncoderTurn[1])}
+          {renderEditCell(bigEncoderPress)}
         </div>
       </div>
     </div>

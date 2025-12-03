@@ -377,5 +377,67 @@ $app->delete('/api/translations/{id}', function (Request $request, Response $res
     return jsonResponse($response, ['success' => true]);
 });
 
+// API: Bulk save translations for an application
+// Body: { application_id: number, translations: { [via_macro: string]: string } }
+// Empty string values will delete the translation, non-empty will upsert
+$app->post('/api/translations/bulk', function (Request $request, Response $response) {
+    $data = json_decode($request->getBody()->getContents(), true);
+    $applicationId = isset($data['application_id']) ? (int)$data['application_id'] : null;
+    $translations = $data['translations'] ?? [];
+    
+    if ($applicationId === null) {
+        return jsonResponse($response, ['error' => 'application_id is required'], 400);
+    }
+    
+    if (!is_array($translations)) {
+        return jsonResponse($response, ['error' => 'translations must be an object'], 400);
+    }
+    
+    $db = getDb();
+    
+    // Verify application exists
+    $stmt = $db->prepare('SELECT id FROM application WHERE id = ?');
+    $stmt->execute([$applicationId]);
+    if (!$stmt->fetch()) {
+        return jsonResponse($response, ['error' => 'Application not found'], 404);
+    }
+    
+    $saved = 0;
+    $deleted = 0;
+    
+    foreach ($translations as $viaMacro => $humanLabel) {
+        $viaMacro = trim($viaMacro);
+        $humanLabel = trim($humanLabel);
+        
+        if (empty($viaMacro)) continue;
+        
+        // Check if translation exists for this app
+        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND application_id = ?');
+        $stmt->execute([$viaMacro, $applicationId]);
+        $existing = $stmt->fetch();
+        
+        if (empty($humanLabel)) {
+            // Delete if exists and value is empty
+            if ($existing) {
+                $stmt = $db->prepare('DELETE FROM translation WHERE id = ?');
+                $stmt->execute([$existing['id']]);
+                $deleted++;
+            }
+        } else {
+            // Upsert
+            if ($existing) {
+                $stmt = $db->prepare('UPDATE translation SET human_label = ? WHERE id = ?');
+                $stmt->execute([$humanLabel, $existing['id']]);
+            } else {
+                $stmt = $db->prepare('INSERT INTO translation (via_macro, application_id, human_label) VALUES (?, ?, ?)');
+                $stmt->execute([$viaMacro, $applicationId, $humanLabel]);
+            }
+            $saved++;
+        }
+    }
+    
+    return jsonResponse($response, ['success' => true, 'saved' => $saved, 'deleted' => $deleted]);
+});
+
 $app->run();
 
