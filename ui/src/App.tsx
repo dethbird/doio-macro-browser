@@ -1,8 +1,14 @@
+import ProfileSelector from './components/ProfileSelector'
+import MacroDisplay from './components/MacroDisplay'
+
 function App() {
   return (
-    <div>
-      <h1 className="title has-text-light">hello world</h1>
-    </div>
+    <section className="section">
+      <div className="container">
+        <ProfileSelector />
+        <MacroDisplay />
+      </div>
+    </section>
   )
 }
 
