@@ -1,22 +1,12 @@
 {
-  "name": "dethbird/doio-macro-browser",
-  "description": "Web UI and API to browse DOIO Macropad presets",
-  "type": "project",
-  "require": {
-    "php": ">=8.1",
-    "slim/slim": "^4.14",
-    "slim/psr7": "^1.6",
-  "slim/twig-view": "^3.3",
-    "twig/twig": "^3.0"
-  },
-  "autoload": {
-    "psr-4": {
-      "App\\": "src/"
+    "require": {
+        "php": "^8.1",
+        "slim/slim": "^4.0",
+        "slim/psr7": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
     }
-  },
-  "scripts": {
-    "start": "php -S localhost:8080 -t public",
-    "db:init": "php bin/init-db.php",
-    "db:seed-rebelle": "php bin/seed-rebelle.php"
-  }
 }
