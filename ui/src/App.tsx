@@ -210,6 +210,7 @@ function App() {
           <MacroDisplay 
             profileJson={profileJson} 
             currentLayer={currentLayer}
+            applicationId={selectedApplication?.id ?? null}
           />
         )}
       </div>
