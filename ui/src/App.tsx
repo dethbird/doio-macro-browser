@@ -34,6 +34,10 @@ function App() {
     setProfileJson(null)
   }
 
+  const handleApplicationAdded = (application: Application) => {
+    setApplications(prev => [...prev, application].sort((a, b) => a.name.localeCompare(b.name)))
+  }
+
   return (
     <section className="section">
       <div className="container">
@@ -41,6 +45,7 @@ function App() {
           applications={applications}
           selectedApplication={selectedApplication}
           onApplicationChange={handleApplicationChange}
+          onApplicationAdded={handleApplicationAdded}
         />
         <MacroDisplay profileJson={profileJson} />
       </div>

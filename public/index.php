@@ -61,6 +61,9 @@ function jsonResponse(Response $response, array $data, int $status = 200): Respo
 
 $app = AppFactory::create();
 
+// Add error middleware for debugging
+$app->addErrorMiddleware(true, true, true);
+
 $twig = Twig::create(__DIR__ . '/../templates', ['cache' => false]);
 $app->add(TwigMiddleware::create($app, $twig));
 
@@ -123,6 +126,32 @@ $app->get('/api/applications', function (Request $request, Response $response) {
     $stmt = $db->query('SELECT * FROM application ORDER BY name');
     $applications = $stmt->fetchAll();
     return jsonResponse($response, $applications);
+});
+
+// API: Create application
+$app->post('/api/applications', function (Request $request, Response $response) {
+    $data = json_decode($request->getBody()->getContents(), true);
+    $name = trim($data['name'] ?? '');
+    
+    if (empty($name)) {
+        return jsonResponse($response, ['error' => 'Name is required'], 400);
+    }
+    
+    $db = getDb();
+    
+    // Check if already exists
+    $stmt = $db->prepare('SELECT id FROM application WHERE name = ?');
+    $stmt->execute([$name]);
+    if ($stmt->fetch()) {
+        return jsonResponse($response, ['error' => 'Application already exists'], 409);
+    }
+    
+    $stmt = $db->prepare('INSERT INTO application (name) VALUES (?)');
+    $stmt->execute([$name]);
+    
+    $id = $db->lastInsertId();
+    
+    return jsonResponse($response, ['id' => (int)$id, 'name' => $name], 201);
 });
 
 // API: Get single application
