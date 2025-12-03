@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCog } from '@fortawesome/free-solid-svg-icons'
 import ProfileSelector from './components/ProfileSelector'
@@ -7,6 +7,7 @@ import MacroDisplayEdit from './components/MacroDisplayEdit'
 import type { Application, Profile, ViaProfile } from './types'
 
 const MAX_LAYERS = 4
+const SWIPE_THRESHOLD = 50 // Minimum swipe distance in pixels
 
 function App() {
   const [applications, setApplications] = useState<Application[]>([])
@@ -135,6 +136,49 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [layerCount])
+
+  // Touch swipe navigation for layers
+  const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
+
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX
+      touchStartY.current = e.touches[0].clientY
+    }
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (touchStartX.current === null || touchStartY.current === null) return
+      
+      const touchEndX = e.changedTouches[0].clientX
+      const touchEndY = e.changedTouches[0].clientY
+      
+      const deltaX = touchEndX - touchStartX.current
+      const deltaY = touchEndY - touchStartY.current
+      
+      // Only trigger if horizontal swipe is greater than vertical (to avoid conflicts with scrolling)
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SWIPE_THRESHOLD) {
+        if (deltaX > 0) {
+          // Swipe right -> previous layer
+          handlePrevLayer()
+        } else {
+          // Swipe left -> next layer
+          handleNextLayer()
+        }
+      }
+      
+      touchStartX.current = null
+      touchStartY.current = null
+    }
+
+    window.addEventListener('touchstart', handleTouchStart)
+    window.addEventListener('touchend', handleTouchEnd)
+    
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchend', handleTouchEnd)
+    }
   }, [layerCount])
 
   const handleApplicationAdded = (application: Application) => {
