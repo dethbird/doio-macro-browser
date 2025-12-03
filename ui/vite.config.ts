@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: resolve(__dirname, '../public/assets'),
-    emptyDirOnBuild: true,
+    emptyOutDir: true,
     manifest: true,
     rollupOptions: {
       input: resolve(__dirname, 'src/main.tsx'),

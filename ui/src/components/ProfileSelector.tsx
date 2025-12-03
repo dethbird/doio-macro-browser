@@ -15,7 +15,6 @@ function ProfileSelector({ applications, selectedApplication, onApplicationChang
 
   const handleApplicationSaved = (application: Application) => {
     onApplicationAdded(application)
-    onApplicationChange(application.id)
     setIsModalOpen(false)
   }
 
@@ -28,7 +27,7 @@ function ProfileSelector({ applications, selectedApplication, onApplicationChang
               value={selectedApplication?.id ?? ''}
               onChange={(e) => onApplicationChange(e.target.value ? Number(e.target.value) : null)}
             >
-              <option value="">Select an application...</option>
+              <option value="">Select or create an application...</option>
               {applications.map(app => (
                 <option key={app.id} value={app.id}>{app.name}</option>
               ))}

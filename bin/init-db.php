@@ -26,4 +26,8 @@ $pdo->exec('PRAGMA foreign_keys = ON');
 $schema = file_get_contents($schemaPath);
 $pdo->exec($schema);
 
+// Set permissions for web server access
+chmod(dirname($dbPath), 0777);
+chmod($dbPath, 0666);
+
 echo "Database initialized at: $dbPath\n";

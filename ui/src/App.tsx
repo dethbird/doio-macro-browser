@@ -9,10 +9,22 @@ function App() {
   const [, setSelectedProfile] = useState<Profile | null>(null)
   const [profileJson, setProfileJson] = useState<unknown>(null)
 
+  // Fetch applications and restore selection from localStorage
   useEffect(() => {
     fetch('/api/applications')
       .then(res => res.json())
-      .then(data => setApplications(data))
+      .then(data => {
+        setApplications(data)
+        
+        // Restore selected application from localStorage
+        const savedAppId = localStorage.getItem('selectedApplicationId')
+        if (savedAppId) {
+          const savedApp = data.find((a: Application) => a.id === Number(savedAppId))
+          if (savedApp) {
+            setSelectedApplication(savedApp)
+          }
+        }
+      })
       .catch(err => console.error('Failed to fetch applications:', err))
   }, [])
 
@@ -21,10 +33,22 @@ function App() {
     setSelectedApplication(app)
     setSelectedProfile(null)
     setProfileJson(null)
+    
+    // Persist to localStorage
+    if (appId) {
+      localStorage.setItem('selectedApplicationId', String(appId))
+    } else {
+      localStorage.removeItem('selectedApplicationId')
+    }
   }
 
   const handleApplicationAdded = (application: Application) => {
     setApplications(prev => [...prev, application].sort((a, b) => a.name.localeCompare(b.name)))
+    // Select the newly added application
+    setSelectedApplication(application)
+    setSelectedProfile(null)
+    setProfileJson(null)
+    localStorage.setItem('selectedApplicationId', String(application.id))
   }
 
   return (
@@ -43,3 +67,4 @@ function App() {
 }
 
 export default App
+
