@@ -121,7 +121,10 @@ function App() {
           onProfileAdded={handleProfileAdded}
           onProfileUpdated={handleProfileUpdated}
         />
-        <MacroDisplay profileJson={profileJson} />
+        <MacroDisplay 
+          profileJson={profileJson} 
+          applicationId={selectedApplication?.id ?? null}
+        />
       </div>
     </section>
   )

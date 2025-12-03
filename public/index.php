@@ -265,5 +265,117 @@ $app->put('/api/applications/{application_id}/profiles/{id}', function (Request 
     ]);
 });
 
+// API: Get all translations (optionally filtered by application_id)
+$app->get('/api/translations', function (Request $request, Response $response) {
+    $db = getDb();
+    $params = $request->getQueryParams();
+    $applicationId = $params['application_id'] ?? null;
+    
+    if ($applicationId) {
+        // Get app-specific + generic translations
+        $stmt = $db->prepare('SELECT * FROM translation WHERE application_id = ? OR application_id IS NULL ORDER BY via_macro');
+        $stmt->execute([$applicationId]);
+    } else {
+        // Get all translations
+        $stmt = $db->query('SELECT * FROM translation ORDER BY via_macro');
+    }
+    
+    $translations = $stmt->fetchAll();
+    return jsonResponse($response, $translations);
+});
+
+// API: Create translation
+$app->post('/api/translations', function (Request $request, Response $response) {
+    $data = json_decode($request->getBody()->getContents(), true);
+    $viaMacro = trim($data['via_macro'] ?? '');
+    $humanLabel = trim($data['human_label'] ?? '');
+    $applicationId = isset($data['application_id']) ? (int)$data['application_id'] : null;
+    
+    if (empty($viaMacro) || empty($humanLabel)) {
+        return jsonResponse($response, ['error' => 'via_macro and human_label are required'], 400);
+    }
+    
+    $db = getDb();
+    
+    // Verify application exists if specified
+    if ($applicationId !== null) {
+        $stmt = $db->prepare('SELECT id FROM application WHERE id = ?');
+        $stmt->execute([$applicationId]);
+        if (!$stmt->fetch()) {
+            return jsonResponse($response, ['error' => 'Application not found'], 404);
+        }
+    }
+    
+    // Check for existing translation
+    if ($applicationId !== null) {
+        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND application_id = ?');
+        $stmt->execute([$viaMacro, $applicationId]);
+    } else {
+        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND application_id IS NULL');
+        $stmt->execute([$viaMacro]);
+    }
+    
+    if ($stmt->fetch()) {
+        return jsonResponse($response, ['error' => 'Translation already exists'], 409);
+    }
+    
+    $stmt = $db->prepare('INSERT INTO translation (via_macro, application_id, human_label) VALUES (?, ?, ?)');
+    $stmt->execute([$viaMacro, $applicationId, $humanLabel]);
+    
+    $id = $db->lastInsertId();
+    
+    return jsonResponse($response, [
+        'id' => (int)$id,
+        'via_macro' => $viaMacro,
+        'application_id' => $applicationId,
+        'human_label' => $humanLabel
+    ], 201);
+});
+
+// API: Update translation
+$app->put('/api/translations/{id}', function (Request $request, Response $response, array $args) {
+    $data = json_decode($request->getBody()->getContents(), true);
+    $humanLabel = trim($data['human_label'] ?? '');
+    
+    if (empty($humanLabel)) {
+        return jsonResponse($response, ['error' => 'human_label is required'], 400);
+    }
+    
+    $db = getDb();
+    $stmt = $db->prepare('SELECT * FROM translation WHERE id = ?');
+    $stmt->execute([$args['id']]);
+    $translation = $stmt->fetch();
+    
+    if (!$translation) {
+        return jsonResponse($response, ['error' => 'Translation not found'], 404);
+    }
+    
+    $stmt = $db->prepare('UPDATE translation SET human_label = ? WHERE id = ?');
+    $stmt->execute([$humanLabel, $args['id']]);
+    
+    return jsonResponse($response, [
+        'id' => (int)$translation['id'],
+        'via_macro' => $translation['via_macro'],
+        'application_id' => $translation['application_id'] ? (int)$translation['application_id'] : null,
+        'human_label' => $humanLabel
+    ]);
+});
+
+// API: Delete translation
+$app->delete('/api/translations/{id}', function (Request $request, Response $response, array $args) {
+    $db = getDb();
+    $stmt = $db->prepare('SELECT id FROM translation WHERE id = ?');
+    $stmt->execute([$args['id']]);
+    
+    if (!$stmt->fetch()) {
+        return jsonResponse($response, ['error' => 'Translation not found'], 404);
+    }
+    
+    $stmt = $db->prepare('DELETE FROM translation WHERE id = ?');
+    $stmt->execute([$args['id']]);
+    
+    return jsonResponse($response, ['success' => true]);
+});
+
 $app->run();
 
