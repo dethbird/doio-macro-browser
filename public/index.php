@@ -186,6 +186,38 @@ $app->get('/api/applications/{application_id}/profiles', function (Request $requ
     return jsonResponse($response, $profiles);
 });
 
+// API: Create profile for an application
+$app->post('/api/applications/{application_id}/profiles', function (Request $request, Response $response, array $args) {
+    $data = json_decode($request->getBody()->getContents(), true);
+    $name = trim($data['name'] ?? '');
+    $applicationId = $args['application_id'];
+    
+    if (empty($name)) {
+        return jsonResponse($response, ['error' => 'Name is required'], 400);
+    }
+    
+    $db = getDb();
+    
+    // Verify application exists
+    $stmt = $db->prepare('SELECT id FROM application WHERE id = ?');
+    $stmt->execute([$applicationId]);
+    if (!$stmt->fetch()) {
+        return jsonResponse($response, ['error' => 'Application not found'], 404);
+    }
+    
+    $stmt = $db->prepare('INSERT INTO profile (application_id, name) VALUES (?, ?)');
+    $stmt->execute([$applicationId, $name]);
+    
+    $id = $db->lastInsertId();
+    
+    return jsonResponse($response, [
+        'id' => (int)$id,
+        'application_id' => (int)$applicationId,
+        'name' => $name,
+        'json' => null
+    ], 201);
+});
+
 // API: Get single profile
 $app->get('/api/applications/{application_id}/profiles/{id}', function (Request $request, Response $response, array $args) {
     $db = getDb();

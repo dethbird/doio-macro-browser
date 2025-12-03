@@ -1,21 +1,41 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import ApplicationForm from './Forms/Application'
-import { Application } from '../types'
+import ProfileForm from './Forms/Profile'
+import { Application, Profile } from '../types'
 
 interface ProfileSelectorProps {
   applications: Application[]
+  profiles: Profile[]
   selectedApplication: Application | null
+  selectedProfile: Profile | null
   onApplicationChange: (appId: number | null) => void
+  onProfileChange: (profileId: number | null) => void
   onApplicationAdded: (application: Application) => void
+  onProfileAdded: (profile: Profile) => void
 }
 
-function ProfileSelector({ applications, selectedApplication, onApplicationChange, onApplicationAdded }: ProfileSelectorProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+function ProfileSelector({ 
+  applications, 
+  profiles,
+  selectedApplication, 
+  selectedProfile,
+  onApplicationChange, 
+  onProfileChange,
+  onApplicationAdded,
+  onProfileAdded
+}: ProfileSelectorProps) {
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
 
   const handleApplicationSaved = (application: Application) => {
     onApplicationAdded(application)
-    setIsModalOpen(false)
+    setIsAppModalOpen(false)
+  }
+
+  const handleProfileSaved = (profile: Profile) => {
+    onProfileAdded(profile)
+    setIsProfileModalOpen(false)
   }
 
   return (
@@ -37,7 +57,7 @@ function ProfileSelector({ applications, selectedApplication, onApplicationChang
         <div className="control">
           <button 
             className="button is-primary"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setIsAppModalOpen(true)}
             title="Add Application"
           >
             <span>+</span>
@@ -45,15 +65,56 @@ function ProfileSelector({ applications, selectedApplication, onApplicationChang
         </div>
       </div>
 
+      {selectedApplication && (
+        <div className="field has-addons">
+          <div className="control is-expanded">
+            <div className="select is-fullwidth">
+              <select
+                value={selectedProfile?.id ?? ''}
+                onChange={(e) => onProfileChange(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">Select or create a profile...</option>
+                {profiles.map(profile => (
+                  <option key={profile.id} value={profile.id}>{profile.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="control">
+            <button 
+              className="button is-primary"
+              onClick={() => setIsProfileModalOpen(true)}
+              title="Add Profile"
+            >
+              <span>+</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isAppModalOpen} 
+        onClose={() => setIsAppModalOpen(false)}
         title="Add Application"
       >
         <ApplicationForm 
           onSave={handleApplicationSaved}
-          onCancel={() => setIsModalOpen(false)}
+          onCancel={() => setIsAppModalOpen(false)}
         />
+      </Modal>
+
+      <Modal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)}
+        title="Add Profile"
+      >
+        {selectedApplication && (
+          <ProfileForm 
+            applicationId={selectedApplication.id}
+            onSave={handleProfileSaved}
+            onCancel={() => setIsProfileModalOpen(false)}
+          />
+        )}
       </Modal>
     </div>
   )
