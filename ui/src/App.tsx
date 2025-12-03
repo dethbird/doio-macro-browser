@@ -1,18 +1,7 @@
 import { useState, useEffect } from 'react'
 import ProfileSelector from './components/ProfileSelector'
 import MacroDisplay from './components/MacroDisplay'
-
-interface Application {
-  id: number
-  name: string
-}
-
-interface Profile {
-  id: number
-  application_id: number
-  name: string
-  json: unknown
-}
+import { Application, Profile } from './types'
 
 function App() {
   const [applications, setApplications] = useState<Application[]>([])

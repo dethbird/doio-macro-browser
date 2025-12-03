@@ -1,11 +1,12 @@
 import { useState } from 'react'
+import type { Application } from '../../types'
 
-interface ApplicationFormProps {
-  onSave: (application: { id: number; name: string }) => void
+interface ApplicationProps {
+  onSave: (application: Application) => void
   onCancel: () => void
 }
 
-function ApplicationForm({ onSave, onCancel }: ApplicationFormProps) {
+function Application({ onSave, onCancel }: ApplicationProps) {
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -80,4 +81,4 @@ function ApplicationForm({ onSave, onCancel }: ApplicationFormProps) {
   )
 }
 
-export default ApplicationForm
+export default Application

@@ -1,11 +1,7 @@
 import { useState } from 'react'
 import Modal from './Modal'
-import ApplicationForm from './ApplicationForm'
-
-interface Application {
-  id: number
-  name: string
-}
+import ApplicationForm from './Forms/Application'
+import { Application } from '../types'
 
 interface ProfileSelectorProps {
   applications: Application[]
