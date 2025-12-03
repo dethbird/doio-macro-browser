@@ -1,9 +1,15 @@
 {% extends "layout.twig" %}
 
+{% block head %}
+    {% for css in assets.css %}
+        <link rel="stylesheet" href="{{ css }}">
+    {% endfor %}
+{% endblock %}
+
 {% block content %}
-    <section class="section">
-        <div class="container">
-            <h1 class="title has-text-light">hello world</h1>
-        </div>
-    </section>
+    <div id="root"></div>
+    
+    {% for js in assets.js %}
+        <script type="module" src="{{ js }}"></script>
+    {% endfor %}
 {% endblock %}

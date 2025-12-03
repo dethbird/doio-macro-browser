@@ -15,6 +15,30 @@ $dotenv->load();
 // Start session
 session_start();
 
+// Load Vite manifest
+function getViteAssets(): array {
+    $manifestPath = __DIR__ . '/assets/.vite/manifest.json';
+    if (!file_exists($manifestPath)) {
+        return [];
+    }
+    $manifest = json_decode(file_get_contents($manifestPath), true);
+    $entry = $manifest['src/main.tsx'] ?? null;
+    if (!$entry) {
+        return [];
+    }
+    
+    $assets = ['js' => [], 'css' => []];
+    $assets['js'][] = '/assets/' . $entry['file'];
+    
+    if (!empty($entry['css'])) {
+        foreach ($entry['css'] as $css) {
+            $assets['css'][] = '/assets/' . $css;
+        }
+    }
+    
+    return $assets;
+}
+
 $app = AppFactory::create();
 
 $twig = Twig::create(__DIR__ . '/../templates', ['cache' => false]);
@@ -61,7 +85,8 @@ $app->get('/logout', function (Request $request, Response $response) {
 $app->get('/', function (Request $request, Response $response) use ($requireAuth) {
     $authResponse = $requireAuth($request, $response, function ($req, $res) {
         $view = Twig::fromRequest($req);
-        return $view->render($res, 'index.twig');
+        $assets = getViteAssets();
+        return $view->render($res, 'index.twig', ['assets' => $assets]);
     });
     return $authResponse;
 });
