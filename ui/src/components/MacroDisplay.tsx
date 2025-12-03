@@ -87,7 +87,7 @@ function MacroDisplay({ profileJson, applicationId }: MacroDisplayProps) {
                 <div key={keyIndex} className="column is-one-quarter">
                   <div className="notification is-dark p-2">
                     <p className="has-text-weight-bold has-text-light">{label}</p>
-                    <p className="is-size-7 has-text-grey">{macro}</p>
+                    <p className="is-size-7 has-text-grey">{humanize(macro) || macro}</p>
                   </div>
                 </div>
               )
