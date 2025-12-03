@@ -18,5 +18,11 @@ $app->get('/', function (Request $request, Response $response) {
     return $view->render($response, 'index.twig');
 });
 
+$app->get('/api/healthcheck', function (Request $request, Response $response) {
+    $data = ['status' => 'ok', 'timestamp' => time()];
+    $response->getBody()->write(json_encode($data));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
 $app->run();
 
