@@ -124,7 +124,6 @@ function ProfileSelector({
 
       {selectedProfile && (
         <div className="field">
-          <label className="label has-text-light">Upload VIA JSON</label>
           <div className="control">
             <div className={`file has-name is-fullwidth ${uploading ? 'is-loading' : ''}`}>
               <label className="file-label">
@@ -139,7 +138,7 @@ function ProfileSelector({
                   <span className="file-label">Choose a file...</span>
                 </span>
                 <span className="file-name">
-                  {uploading ? 'Uploading...' : 'Select .json file'}
+                  {uploading ? 'Uploading...' : 'Select VIA .json file'}
                 </span>
               </label>
             </div>
