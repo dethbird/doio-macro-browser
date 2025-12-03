@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCog } from '@fortawesome/free-solid-svg-icons'
 import ProfileSelector from './components/ProfileSelector'
 import MacroDisplay from './components/MacroDisplay'
 import MacroDisplayEdit from './components/MacroDisplayEdit'
@@ -14,6 +16,10 @@ function App() {
   const [profileJson, setProfileJson] = useState<unknown>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [currentLayer, setCurrentLayer] = useState(0)
+  const [isProfileSelectorOpen, setIsProfileSelectorOpen] = useState(() => {
+    const saved = localStorage.getItem('profileSelectorOpen')
+    return saved === null ? true : saved === 'true'
+  })
 
   // Fetch applications and restore selection from localStorage
   useEffect(() => {
@@ -157,20 +163,47 @@ function App() {
     ))
   }
 
+  const toggleProfileSelector = () => {
+    setIsProfileSelectorOpen(prev => {
+      const newValue = !prev
+      localStorage.setItem('profileSelectorOpen', String(newValue))
+      return newValue
+    })
+  }
+
   return (
-    <section className="section">
-      <div className="container">
-        <ProfileSelector 
-          applications={applications}
-          profiles={profiles}
-          selectedApplication={selectedApplication}
-          selectedProfile={selectedProfile}
-          onApplicationChange={handleApplicationChange}
-          onProfileChange={handleProfileChange}
-          onApplicationAdded={handleApplicationAdded}
-          onProfileAdded={handleProfileAdded}
-          onProfileUpdated={handleProfileUpdated}
-        />
+    <div className="container pt-3">
+      <div className="is-flex is-justify-content-flex-end is-align-items-center mb-3">
+          {!isProfileSelectorOpen && (
+            <div className="has-text-grey-light mr-3" style={{ fontSize: '13px' }}>
+              <span className="has-text-weight-semibold">App:</span> {selectedApplication?.name || '—'}
+              <span className="mx-2">|</span>
+              <span className="has-text-weight-semibold">Profile:</span> {selectedProfile?.name || '—'}
+              <span className="mx-2">|</span>
+              <span className="has-text-weight-semibold">JSON:</span> {selectedProfile?.json_filename || '—'}
+            </div>
+          )}
+          <button 
+            className={`button is-ghost ${isProfileSelectorOpen ? 'has-text-success' : 'has-text-grey-light'}`}
+            title={isProfileSelectorOpen ? 'Collapse selector' : 'Expand selector'}
+            onClick={toggleProfileSelector}
+          >
+            <FontAwesomeIcon icon={faCog} />
+          </button>
+        </div>
+        {isProfileSelectorOpen && (
+          <ProfileSelector 
+            applications={applications}
+            profiles={profiles}
+            selectedApplication={selectedApplication}
+            selectedProfile={selectedProfile}
+            onApplicationChange={handleApplicationChange}
+            onProfileChange={handleProfileChange}
+            onApplicationAdded={handleApplicationAdded}
+            onProfileAdded={handleProfileAdded}
+            onProfileUpdated={handleProfileUpdated}
+          />
+        )}
         
         {profileJson !== null && (
           <div className="mb-4 is-flex is-align-items-center is-justify-content-space-between">
@@ -214,9 +247,8 @@ function App() {
           />
         )}
       </div>
-    </section>
-  )
-}
+    )
+  }
 
 export default App
 
