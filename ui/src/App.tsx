@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import ProfileSelector from './components/ProfileSelector'
 import MacroDisplay from './components/MacroDisplay'
 import MacroDisplayEdit from './components/MacroDisplayEdit'
-import type { Application, Profile } from './types'
+import type { Application, Profile, ViaProfile } from './types'
+
+const MAX_LAYERS = 4
 
 function App() {
   const [applications, setApplications] = useState<Application[]>([])
@@ -11,6 +13,7 @@ function App() {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
   const [profileJson, setProfileJson] = useState<unknown>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  const [currentLayer, setCurrentLayer] = useState(0)
 
   // Fetch applications and restore selection from localStorage
   useEffect(() => {
@@ -74,6 +77,7 @@ function App() {
     const profile = profiles.find(p => p.id === profileId) || null
     setSelectedProfile(profile)
     setProfileJson(profile?.json || null)
+    setCurrentLayer(0) // Reset to first layer when profile changes
     
     // Persist to localStorage
     if (profileId) {
@@ -82,6 +86,50 @@ function App() {
       localStorage.removeItem('selectedProfileId')
     }
   }
+
+  // Parse profile JSON to get layer count
+  const parsedProfile: ViaProfile | null = (() => {
+    if (!profileJson) return null
+    if (typeof profileJson === 'string') {
+      try {
+        return JSON.parse(profileJson) as ViaProfile
+      } catch {
+        return null
+      }
+    }
+    return profileJson as ViaProfile
+  })()
+
+  const layerCount = parsedProfile?.layers?.length ?? MAX_LAYERS
+
+  const handlePrevLayer = () => {
+    setCurrentLayer(prev => (prev > 0 ? prev - 1 : layerCount - 1))
+  }
+
+  const handleNextLayer = () => {
+    setCurrentLayer(prev => (prev < layerCount - 1 ? prev + 1 : 0))
+  }
+
+  // Keyboard navigation for layers
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+      
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        handlePrevLayer()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        handleNextLayer()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [layerCount])
 
   const handleApplicationAdded = (application: Application) => {
     setApplications(prev => [...prev, application].sort((a, b) => a.name.localeCompare(b.name)))
@@ -125,7 +173,24 @@ function App() {
         />
         
         {profileJson !== null && (
-          <div className="mb-4">
+          <div className="mb-4 is-flex is-align-items-center is-justify-content-space-between">
+            <div className="is-flex is-align-items-center">
+              <button 
+                className="button is-small is-dark mr-2"
+                onClick={handlePrevLayer}
+              >
+                ← Prev
+              </button>
+              <span className="has-text-light mx-3">
+                Layer {currentLayer + 1} of {layerCount}
+              </span>
+              <button 
+                className="button is-small is-dark ml-2"
+                onClick={handleNextLayer}
+              >
+                Next →
+              </button>
+            </div>
             <button 
               className={`button is-small ${isEditMode ? 'is-warning' : 'is-info'}`}
               onClick={() => setIsEditMode(!isEditMode)}
@@ -139,9 +204,13 @@ function App() {
           <MacroDisplayEdit 
             profileJson={profileJson} 
             applicationId={selectedApplication?.id ?? null}
+            currentLayer={currentLayer}
           />
         ) : (
-          <MacroDisplay profileJson={profileJson} />
+          <MacroDisplay 
+            profileJson={profileJson} 
+            currentLayer={currentLayer}
+          />
         )}
       </div>
     </section>
