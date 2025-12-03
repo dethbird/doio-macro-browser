@@ -99,6 +99,14 @@ function App() {
     localStorage.setItem('selectedProfileId', String(profile.id))
   }
 
+  const handleProfileUpdated = (profile: Profile) => {
+    setProfileJson(profile.json)
+    setSelectedProfile(profile)
+    setProfiles(prev => prev.map(p => 
+      p.id === profile.id ? profile : p
+    ))
+  }
+
   return (
     <section className="section">
       <div className="container">
@@ -111,6 +119,7 @@ function App() {
           onProfileChange={handleProfileChange}
           onApplicationAdded={handleApplicationAdded}
           onProfileAdded={handleProfileAdded}
+          onProfileUpdated={handleProfileUpdated}
         />
         <MacroDisplay profileJson={profileJson} />
       </div>

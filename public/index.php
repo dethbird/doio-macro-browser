@@ -214,6 +214,7 @@ $app->post('/api/applications/{application_id}/profiles', function (Request $req
         'id' => (int)$id,
         'application_id' => (int)$applicationId,
         'name' => $name,
+        'json_filename' => null,
         'json' => null
     ], 201);
 });
@@ -235,6 +236,33 @@ $app->get('/api/applications/{application_id}/profiles/{id}', function (Request 
     }
     
     return jsonResponse($response, $profile);
+});
+
+// API: Update profile JSON
+$app->put('/api/applications/{application_id}/profiles/{id}', function (Request $request, Response $response, array $args) {
+    $data = json_decode($request->getBody()->getContents(), true);
+    $json = $data['json'] ?? null;
+    $jsonFilename = $data['json_filename'] ?? null;
+    
+    $db = getDb();
+    $stmt = $db->prepare('SELECT * FROM profile WHERE id = ? AND application_id = ?');
+    $stmt->execute([$args['id'], $args['application_id']]);
+    $profile = $stmt->fetch();
+    
+    if (!$profile) {
+        return jsonResponse($response, ['error' => 'Profile not found'], 404);
+    }
+    
+    $stmt = $db->prepare('UPDATE profile SET json_filename = ?, json = ? WHERE id = ?');
+    $stmt->execute([$jsonFilename, json_encode($json), $args['id']]);
+    
+    return jsonResponse($response, [
+        'id' => (int)$profile['id'],
+        'application_id' => (int)$profile['application_id'],
+        'name' => $profile['name'],
+        'json_filename' => $jsonFilename,
+        'json' => $json
+    ]);
 });
 
 $app->run();
