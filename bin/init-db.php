@@ -10,6 +10,12 @@ if (!is_dir(dirname($dbPath))) {
     mkdir(dirname($dbPath), 0755, true);
 }
 
+// Remove existing database
+if (file_exists($dbPath)) {
+    unlink($dbPath);
+    echo "Removed existing database\n";
+}
+
 $pdo = new PDO('sqlite:' . $dbPath);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
