@@ -16,6 +16,7 @@ export interface Translation {
   via_macro: string
   profile_id: number | null
   human_label: string
+  icon_url: string | null
 }
 
 export interface LayerTranslation {
@@ -23,6 +24,7 @@ export interface LayerTranslation {
   profile_id: number
   layer_index: number
   human_label: string
+  icon_url: string | null
 }
 
 // VIA JSON structure

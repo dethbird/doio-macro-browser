@@ -378,8 +378,8 @@ $app->delete('/api/translations/{id}', function (Request $request, Response $res
 });
 
 // API: Bulk save translations for a profile
-// Body: { profile_id: number, translations: { [via_macro: string]: string } }
-// Empty string values will delete the translation, non-empty will upsert
+// Body: { profile_id: number, translations: { [via_macro: string]: { label: string, icon?: string } } }
+// Empty label will delete the translation, non-empty will upsert
 $app->post('/api/translations/bulk', function (Request $request, Response $response) {
     $data = json_decode($request->getBody()->getContents(), true);
     $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : null;
@@ -405,11 +405,19 @@ $app->post('/api/translations/bulk', function (Request $request, Response $respo
     $saved = 0;
     $deleted = 0;
     
-    foreach ($translations as $viaMacro => $humanLabel) {
+    foreach ($translations as $viaMacro => $value) {
         $viaMacro = trim($viaMacro);
-        $humanLabel = trim($humanLabel);
-        
         if (empty($viaMacro)) continue;
+        
+        // Support both old format (string) and new format ({ label, icon })
+        if (is_string($value)) {
+            $humanLabel = trim($value);
+            $iconUrl = null;
+        } else {
+            $humanLabel = trim($value['label'] ?? '');
+            $iconUrl = isset($value['icon']) ? trim($value['icon']) : null;
+            if ($iconUrl === '') $iconUrl = null;
+        }
         
         // Check if translation exists for this profile
         $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND profile_id = ?');
@@ -426,11 +434,11 @@ $app->post('/api/translations/bulk', function (Request $request, Response $respo
         } else {
             // Upsert
             if ($existing) {
-                $stmt = $db->prepare('UPDATE translation SET human_label = ? WHERE id = ?');
-                $stmt->execute([$humanLabel, $existing['id']]);
+                $stmt = $db->prepare('UPDATE translation SET human_label = ?, icon_url = ? WHERE id = ?');
+                $stmt->execute([$humanLabel, $iconUrl, $existing['id']]);
             } else {
-                $stmt = $db->prepare('INSERT INTO translation (via_macro, profile_id, human_label) VALUES (?, ?, ?)');
-                $stmt->execute([$viaMacro, $profileId, $humanLabel]);
+                $stmt = $db->prepare('INSERT INTO translation (via_macro, profile_id, human_label, icon_url) VALUES (?, ?, ?, ?)');
+                $stmt->execute([$viaMacro, $profileId, $humanLabel, $iconUrl]);
             }
             $saved++;
         }
@@ -449,8 +457,8 @@ $app->get('/api/profiles/{id}/layer-translations', function (Request $request, R
 });
 
 // API: Bulk save layer translations for a profile
-// Body: { layers: { [layer_index: number]: string } }
-// Empty string values will delete the translation, non-empty will upsert
+// Body: { layers: { [layer_index: number]: { label: string, icon?: string } } }
+// Empty label will delete the translation, non-empty will upsert
 $app->post('/api/profiles/{id}/layer-translations', function (Request $request, Response $response, array $args) {
     $profileId = (int)$args['id'];
     $data = json_decode($request->getBody()->getContents(), true);
@@ -472,9 +480,18 @@ $app->post('/api/profiles/{id}/layer-translations', function (Request $request, 
     $saved = 0;
     $deleted = 0;
     
-    foreach ($layers as $layerIndex => $humanLabel) {
+    foreach ($layers as $layerIndex => $value) {
         $layerIndex = (int)$layerIndex;
-        $humanLabel = trim($humanLabel);
+        
+        // Support both old format (string) and new format ({ label, icon })
+        if (is_string($value)) {
+            $humanLabel = trim($value);
+            $iconUrl = null;
+        } else {
+            $humanLabel = trim($value['label'] ?? '');
+            $iconUrl = isset($value['icon']) ? trim($value['icon']) : null;
+            if ($iconUrl === '') $iconUrl = null;
+        }
         
         // Check if translation exists
         $stmt = $db->prepare('SELECT id FROM layer_translation WHERE profile_id = ? AND layer_index = ?');
@@ -491,11 +508,11 @@ $app->post('/api/profiles/{id}/layer-translations', function (Request $request, 
         } else {
             // Upsert
             if ($existing) {
-                $stmt = $db->prepare('UPDATE layer_translation SET human_label = ? WHERE id = ?');
-                $stmt->execute([$humanLabel, $existing['id']]);
+                $stmt = $db->prepare('UPDATE layer_translation SET human_label = ?, icon_url = ? WHERE id = ?');
+                $stmt->execute([$humanLabel, $iconUrl, $existing['id']]);
             } else {
-                $stmt = $db->prepare('INSERT INTO layer_translation (profile_id, layer_index, human_label) VALUES (?, ?, ?)');
-                $stmt->execute([$profileId, $layerIndex, $humanLabel]);
+                $stmt = $db->prepare('INSERT INTO layer_translation (profile_id, layer_index, human_label, icon_url) VALUES (?, ?, ?, ?)');
+                $stmt->execute([$profileId, $layerIndex, $humanLabel, $iconUrl]);
             }
             $saved++;
         }

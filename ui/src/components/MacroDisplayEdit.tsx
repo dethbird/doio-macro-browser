@@ -55,7 +55,9 @@ interface TranslationInfo {
 function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, layerCount, layerTranslations, onSave, onLayerTranslationsSaved }: MacroDisplayEditProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
   const [overrides, setOverrides] = useState<Map<string, string>>(new Map())
+  const [iconOverrides, setIconOverrides] = useState<Map<string, string>>(new Map())
   const [layerNameOverrides, setLayerNameOverrides] = useState<Map<number, string>>(new Map())
+  const [layerIconOverrides, setLayerIconOverrides] = useState<Map<number, string>>(new Map())
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
@@ -78,21 +80,31 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, lay
   // Initialize overrides from profile-specific translations
   useEffect(() => {
     const profileOverrides = new Map<string, string>()
+    const profileIconOverrides = new Map<string, string>()
     for (const t of translations) {
       if (t.profile_id !== null) {
         profileOverrides.set(t.via_macro, t.human_label)
+        if (t.icon_url) {
+          profileIconOverrides.set(t.via_macro, t.icon_url)
+        }
       }
     }
     setOverrides(profileOverrides)
+    setIconOverrides(profileIconOverrides)
   }, [translations])
 
   // Initialize layer name overrides from layerTranslations
   useEffect(() => {
-    const overrides = new Map<number, string>()
+    const nameOverrides = new Map<number, string>()
+    const iconOverrides = new Map<number, string>()
     for (const lt of layerTranslations) {
-      overrides.set(lt.layer_index, lt.human_label)
+      nameOverrides.set(lt.layer_index, lt.human_label)
+      if (lt.icon_url) {
+        iconOverrides.set(lt.layer_index, lt.icon_url)
+      }
     }
-    setLayerNameOverrides(overrides)
+    setLayerNameOverrides(nameOverrides)
+    setLayerIconOverrides(iconOverrides)
   }, [layerTranslations])
 
   const parsedJson = useMemo(() => {
@@ -135,8 +147,24 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, lay
     })
   }
 
+  const handleIconOverrideChange = (macro: string, value: string) => {
+    setIconOverrides(prev => {
+      const next = new Map(prev)
+      next.set(macro, value)
+      return next
+    })
+  }
+
   const handleLayerNameChange = (layerIndex: number, value: string) => {
     setLayerNameOverrides(prev => {
+      const next = new Map(prev)
+      next.set(layerIndex, value)
+      return next
+    })
+  }
+
+  const handleLayerIconChange = (layerIndex: number, value: string) => {
+    setLayerIconOverrides(prev => {
       const next = new Map(prev)
       next.set(layerIndex, value)
       return next
@@ -152,17 +180,25 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, lay
     setIsSaving(true)
     setSaveMessage(null)
 
-    // Build translations object from overrides
-    const translationsToSave: Record<string, string> = {}
-    overrides.forEach((value, macro) => {
-      // Include all overrides (empty string will delete)
-      translationsToSave[macro] = value
+    // Build translations object from overrides (with icons)
+    const translationsToSave: Record<string, { label: string; icon?: string }> = {}
+    // Collect all macros that have either label or icon overrides
+    const allMacros = new Set([...overrides.keys(), ...iconOverrides.keys()])
+    allMacros.forEach(macro => {
+      const label = overrides.get(macro) ?? ''
+      const icon = iconOverrides.get(macro) ?? ''
+      // Only include if there's a label (empty label will delete)
+      translationsToSave[macro] = { label, icon: icon || undefined }
     })
 
-    // Build layer translations object
-    const layersToSave: Record<number, string> = {}
-    layerNameOverrides.forEach((value, layerIndex) => {
-      layersToSave[layerIndex] = value
+    // Build layer translations object (with icons)
+    const layersToSave: Record<number, { label: string; icon?: string }> = {}
+    // Collect all layer indices that have either label or icon overrides
+    const allLayers = new Set([...layerNameOverrides.keys(), ...layerIconOverrides.keys()])
+    allLayers.forEach(layerIndex => {
+      const label = layerNameOverrides.get(layerIndex) ?? ''
+      const icon = layerIconOverrides.get(layerIndex) ?? ''
+      layersToSave[layerIndex] = { label, icon: icon || undefined }
     })
 
     try {
@@ -238,6 +274,7 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, lay
     const info = getTranslationInfo(macro)
     const humanized = humanize(macro)
     const currentOverride = overrides.get(macro) ?? ''
+    const currentIconOverride = iconOverrides.get(macro) ?? ''
     
     return (
       <div style={{ ...cellStyle, backgroundColor: bgColor }}>
@@ -255,6 +292,13 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, lay
           placeholder={info.generic || humanized || 'Override...'}
           value={currentOverride}
           onChange={(e) => handleOverrideChange(macro, e.target.value)}
+        />
+        <input
+          type="text"
+          style={inputStyle}
+          placeholder="https://image.com/icon.png"
+          value={currentIconOverride}
+          onChange={(e) => handleIconOverrideChange(macro, e.target.value)}
         />
       </div>
     )
@@ -313,6 +357,16 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, lay
                 placeholder={`Layer ${i + 1}`}
                 value={layerNameOverrides.get(i) ?? ''}
                 onChange={(e) => handleLayerNameChange(i, e.target.value)}
+              />
+              <input
+                type="text"
+                style={{
+                  ...inputStyle,
+                  backgroundColor: i === currentLayer ? '#2a4a3a' : '#2b2b2b'
+                }}
+                placeholder="https://image.com/icon.png"
+                value={layerIconOverrides.get(i) ?? ''}
+                onChange={(e) => handleLayerIconChange(i, e.target.value)}
               />
             </div>
           ))}

@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS translation (
     via_macro TEXT NOT NULL,
     profile_id INTEGER,
     human_label TEXT NOT NULL,
+    icon_url TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
 );
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS layer_translation (
     profile_id INTEGER NOT NULL,
     layer_index INTEGER NOT NULL,
     human_label TEXT NOT NULL,
+    icon_url TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE,
     UNIQUE(profile_id, layer_index)

@@ -95,29 +95,57 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
 
   // Create a lookup function for resolving translations
   const getTranslation = useMemo(() => {
-    const profileSpecific = new Map<string, string>()
-    const generic = new Map<string, string>()
+    const profileSpecific = new Map<string, { label: string; icon: string | null }>()
+    const generic = new Map<string, { label: string; icon: string | null }>()
     
     for (const t of translations) {
       if (t.profile_id !== null) {
-        profileSpecific.set(t.via_macro, t.human_label)
+        profileSpecific.set(t.via_macro, { label: t.human_label, icon: t.icon_url })
       } else {
-        generic.set(t.via_macro, t.human_label)
+        generic.set(t.via_macro, { label: t.human_label, icon: t.icon_url })
       }
     }
     
-    return (macro: string): string | null => {
+    return (macro: string): { label: string; icon: string | null } | null => {
       // 1. Profile-specific translation
-      const profileLabel = profileSpecific.get(macro)
-      if (profileLabel) return profileLabel
+      const profileResult = profileSpecific.get(macro)
+      if (profileResult) return profileResult
       
       // 2. Generic translation
-      const genericLabel = generic.get(macro)
-      if (genericLabel) return genericLabel
+      const genericResult = generic.get(macro)
+      if (genericResult) return genericResult
       
       return null
     }
   }, [translations])
+
+  // Helper function to render a macro cell with optional icon
+  const renderMacroContent = (macro: string) => {
+    const humanized = humanize(macro)
+    const translation = getTranslation(macro)
+    
+    return (
+      <>
+        {translation?.icon && (
+          <img 
+            src={translation.icon} 
+            alt="" 
+            style={{ maxHeight: '100px', maxWidth: '60px', objectFit: 'contain' }}
+          />
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+          {translation && (
+            <div className="has-text-light" style={{ fontSize: '12px' }}>
+              {translation.label}
+            </div>
+          )}
+          <div style={labelStyle}>
+            {humanized || '—'}
+          </div>
+        </div>
+      </>
+    )
+  }
 
   if (!profileJson) {
     return (
@@ -152,22 +180,11 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
           padding: '8px',
           borderRadius: '4px'
         }}>
-          {layerData.buttons.map((macro, idx) => {
-            const humanized = humanize(macro)
-            const translation = getTranslation(macro)
-            return (
-              <div key={idx} style={{ ...cellStyle, backgroundColor: '#363636' }}>
-                {translation && (
-                  <div className="has-text-light" style={{ fontSize: '12px' }}>
-                    {translation}
-                  </div>
-                )}
-                <div style={labelStyle}>
-                  {humanized || '—'}
-                </div>
+          {layerData.buttons.map((macro, idx) => (
+              <div key={idx} style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+                {renderMacroContent(macro)}
               </div>
-            )
-          })}
+            ))}
         </div>
       </div>
       
@@ -200,105 +217,42 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
           <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
             <span className="has-text-info" style={{ fontSize: '11px', fontWeight: 'bold' }}>Left</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.leftEncoderTurn[0]) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.leftEncoderTurn[0])}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.leftEncoderTurn[0]) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.leftEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.leftEncoderTurn[1]) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.leftEncoderTurn[1])}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.leftEncoderTurn[1]) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.leftEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.leftEncoderPress) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.leftEncoderPress)}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.leftEncoderPress) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.leftEncoderPress)}
           </div>
           
           {/* Right Encoder */}
           <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
             <span className="has-text-info" style={{ fontSize: '11px', fontWeight: 'bold' }}>Right</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.rightEncoderTurn[0]) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.rightEncoderTurn[0])}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.rightEncoderTurn[0]) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.rightEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.rightEncoderTurn[1]) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.rightEncoderTurn[1])}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.rightEncoderTurn[1]) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.rightEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.rightEncoderPress) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.rightEncoderPress)}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.rightEncoderPress) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.rightEncoderPress)}
           </div>
           
           {/* Big Encoder */}
           <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
             <span className="has-text-warning" style={{ fontSize: '11px', fontWeight: 'bold' }}>Big</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.bigEncoderTurn[0]) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.bigEncoderTurn[0])}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.bigEncoderTurn[0]) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.bigEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.bigEncoderTurn[1]) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.bigEncoderTurn[1])}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.bigEncoderTurn[1]) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.bigEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
-            {getTranslation(layerData.bigEncoderPress) && (
-              <div className="has-text-light" style={{ fontSize: '12px' }}>
-                {getTranslation(layerData.bigEncoderPress)}
-              </div>
-            )}
-            <div style={labelStyle}>
-              {humanize(layerData.bigEncoderPress) || '—'}
-            </div>
+          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+            {renderMacroContent(layerData.bigEncoderPress)}
           </div>
         </div>
       </div>
