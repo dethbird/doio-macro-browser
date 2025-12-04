@@ -16,7 +16,10 @@ function App() {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
   const [profileJson, setProfileJson] = useState<unknown>(null)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [currentLayer, setCurrentLayer] = useState(0)
+  const [currentLayer, setCurrentLayer] = useState(() => {
+    const saved = localStorage.getItem('currentLayer')
+    return saved ? Number(saved) : 0
+  })
   const [isProfileSelectorOpen, setIsProfileSelectorOpen] = useState(() => {
     const saved = localStorage.getItem('profileSelectorOpen')
     return saved === null ? true : saved === 'true'
@@ -110,11 +113,19 @@ function App() {
   const layerCount = parsedProfile?.layers?.length ?? MAX_LAYERS
 
   const handlePrevLayer = () => {
-    setCurrentLayer(prev => (prev > 0 ? prev - 1 : layerCount - 1))
+    setCurrentLayer(prev => {
+      const next = prev > 0 ? prev - 1 : layerCount - 1
+      localStorage.setItem('currentLayer', String(next))
+      return next
+    })
   }
 
   const handleNextLayer = () => {
-    setCurrentLayer(prev => (prev < layerCount - 1 ? prev + 1 : 0))
+    setCurrentLayer(prev => {
+      const next = prev < layerCount - 1 ? prev + 1 : 0
+      localStorage.setItem('currentLayer', String(next))
+      return next
+    })
   }
 
   // Keyboard navigation for layers
