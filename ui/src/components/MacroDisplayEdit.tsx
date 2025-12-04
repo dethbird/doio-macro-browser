@@ -4,7 +4,7 @@ import type { Translation, ViaProfile } from '../types'
 
 interface MacroDisplayEditProps {
   profileJson: unknown
-  applicationId: number | null
+  profileId: number | null
   currentLayer: number
   onSave?: () => void
 }
@@ -48,16 +48,16 @@ interface TranslationInfo {
   appSpecific: string | null
 }
 
-function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: MacroDisplayEditProps) {
+function MacroDisplayEdit({ profileJson, profileId, currentLayer, onSave }: MacroDisplayEditProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
   const [overrides, setOverrides] = useState<Map<string, string>>(new Map())
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
-  // Fetch translations when applicationId changes
+  // Fetch translations when profileId changes
   useEffect(() => {
-    if (applicationId) {
-      fetch(`/api/translations?application_id=${applicationId}`)
+    if (profileId) {
+      fetch(`/api/translations?profile_id=${profileId}`)
         .then(res => res.json())
         .then(data => setTranslations(data))
         .catch(() => setTranslations([]))
@@ -68,17 +68,17 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: 
         .then(data => setTranslations(data))
         .catch(() => setTranslations([]))
     }
-  }, [applicationId])
+  }, [profileId])
 
-  // Initialize overrides from app-specific translations
+  // Initialize overrides from profile-specific translations
   useEffect(() => {
-    const appOverrides = new Map<string, string>()
+    const profileOverrides = new Map<string, string>()
     for (const t of translations) {
-      if (t.application_id !== null) {
-        appOverrides.set(t.via_macro, t.human_label)
+      if (t.profile_id !== null) {
+        profileOverrides.set(t.via_macro, t.human_label)
       }
     }
-    setOverrides(appOverrides)
+    setOverrides(profileOverrides)
   }, [translations])
 
   const parsedJson = useMemo(() => {
@@ -96,12 +96,12 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: 
 
   // Create lookup functions for translations
   const getTranslationInfo = useMemo(() => {
-    const appSpecific = new Map<string, string>()
+    const profileSpecific = new Map<string, string>()
     const generic = new Map<string, string>()
     
     for (const t of translations) {
-      if (t.application_id !== null) {
-        appSpecific.set(t.via_macro, t.human_label)
+      if (t.profile_id !== null) {
+        profileSpecific.set(t.via_macro, t.human_label)
       } else {
         generic.set(t.via_macro, t.human_label)
       }
@@ -109,7 +109,7 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: 
     
     return (macro: string): TranslationInfo => ({
       generic: generic.get(macro) || null,
-      appSpecific: appSpecific.get(macro) || null,
+      appSpecific: profileSpecific.get(macro) || null,
     })
   }, [translations])
 
@@ -122,8 +122,8 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: 
   }
 
   const handleSave = async () => {
-    if (!applicationId) {
-      setSaveMessage('No application selected')
+    if (!profileId) {
+      setSaveMessage('No profile selected')
       return
     }
 
@@ -142,7 +142,7 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          application_id: applicationId,
+          profile_id: profileId,
           translations: translationsToSave
         })
       })
@@ -152,7 +152,7 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: 
       if (res.ok) {
         setSaveMessage(`Saved ${data.saved} translation(s), removed ${data.deleted}`)
         // Refresh translations
-        const refreshRes = await fetch(`/api/translations?application_id=${applicationId}`)
+        const refreshRes = await fetch(`/api/translations?profile_id=${profileId}`)
         const refreshData = await refreshRes.json()
         setTranslations(refreshData)
         onSave?.()
@@ -234,7 +234,7 @@ function MacroDisplayEdit({ profileJson, applicationId, currentLayer, onSave }: 
           <button
             className={`button is-small is-success ${isSaving ? 'is-loading' : ''}`}
             onClick={handleSave}
-            disabled={isSaving || !applicationId}
+            disabled={isSaving || !profileId}
           >
             Save Translations
           </button>

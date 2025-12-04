@@ -21,7 +21,15 @@ function App() {
     return saved ? Number(saved) : 0
   })
   const [isProfileSelectorOpen, setIsProfileSelectorOpen] = useState(() => {
+    // Open by default if no saved preference, or if no app/profile selected
     const saved = localStorage.getItem('profileSelectorOpen')
+    const hasAppSelected = localStorage.getItem('selectedApplicationId')
+    const hasProfileSelected = localStorage.getItem('selectedProfileId')
+    
+    // Force open if no app or profile is selected
+    if (!hasAppSelected || !hasProfileSelected) {
+      return true
+    }
     return saved === null ? true : saved === 'true'
   })
 
@@ -67,6 +75,13 @@ function App() {
       setProfiles([])
     }
   }, [selectedApplication])
+
+  // Auto-open profile selector when no app or profile is selected
+  useEffect(() => {
+    if (!selectedApplication || !selectedProfile) {
+      setIsProfileSelectorOpen(true)
+    }
+  }, [selectedApplication, selectedProfile])
 
   const handleApplicationChange = (appId: number | null) => {
     const app = applications.find(a => a.id === appId) || null
@@ -291,14 +306,14 @@ function App() {
         {isEditMode ? (
           <MacroDisplayEdit 
             profileJson={profileJson} 
-            applicationId={selectedApplication?.id ?? null}
+            profileId={selectedProfile?.id ?? null}
             currentLayer={currentLayer}
           />
         ) : (
           <MacroDisplay 
             profileJson={profileJson} 
             currentLayer={currentLayer}
-            applicationId={selectedApplication?.id ?? null}
+            profileId={selectedProfile?.id ?? null}
           />
         )}
       </div>

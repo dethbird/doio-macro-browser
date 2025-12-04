@@ -5,7 +5,7 @@ import type { ViaProfile, Translation } from '../types'
 interface MacroDisplayProps {
   profileJson: unknown
   currentLayer: number
-  applicationId: number | null
+  profileId: number | null
 }
 
 // Layer index mapping for DOIO KB16
@@ -43,13 +43,13 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '4px',
 }
 
-function MacroDisplay({ profileJson, currentLayer, applicationId }: MacroDisplayProps) {
+function MacroDisplay({ profileJson, currentLayer, profileId }: MacroDisplayProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
 
-  // Fetch translations when applicationId changes
+  // Fetch translations when profileId changes
   useEffect(() => {
-    if (applicationId) {
-      fetch(`/api/translations?application_id=${applicationId}`)
+    if (profileId) {
+      fetch(`/api/translations?profile_id=${profileId}`)
         .then(res => res.json())
         .then(data => setTranslations(data))
         .catch(() => setTranslations([]))
@@ -60,7 +60,7 @@ function MacroDisplay({ profileJson, currentLayer, applicationId }: MacroDisplay
         .then(data => setTranslations(data))
         .catch(() => setTranslations([]))
     }
-  }, [applicationId])
+  }, [profileId])
 
   const parsedJson = useMemo((): ViaProfile | null => {
     if (!profileJson) return null
@@ -94,21 +94,21 @@ function MacroDisplay({ profileJson, currentLayer, applicationId }: MacroDisplay
 
   // Create a lookup function for resolving translations
   const getTranslation = useMemo(() => {
-    const appSpecific = new Map<string, string>()
+    const profileSpecific = new Map<string, string>()
     const generic = new Map<string, string>()
     
     for (const t of translations) {
-      if (t.application_id !== null) {
-        appSpecific.set(t.via_macro, t.human_label)
+      if (t.profile_id !== null) {
+        profileSpecific.set(t.via_macro, t.human_label)
       } else {
         generic.set(t.via_macro, t.human_label)
       }
     }
     
     return (macro: string): string | null => {
-      // 1. App-specific translation
-      const appLabel = appSpecific.get(macro)
-      if (appLabel) return appLabel
+      // 1. Profile-specific translation
+      const profileLabel = profileSpecific.get(macro)
+      if (profileLabel) return profileLabel
       
       // 2. Generic translation
       const genericLabel = generic.get(macro)

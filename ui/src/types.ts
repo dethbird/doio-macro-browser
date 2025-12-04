@@ -14,7 +14,7 @@ export interface Profile {
 export interface Translation {
   id: number
   via_macro: string
-  application_id: number | null
+  profile_id: number | null
   human_label: string
 }
 
