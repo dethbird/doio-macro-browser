@@ -17,6 +17,7 @@ if (!file_exists($dbPath)) {
 
 // Default translations (profile_id = NULL)
 // These are common shortcuts used across painting/creative apps like Rebelle, Photoshop, etc.
+// Many shortcuts sourced from: https://escapemotions.com/products/rebelle/manual/8/keyboard-shortcuts/
 $items = [
     // Color adjustments
     ['A(KC_W)', 'Set Warmer Color'],
@@ -47,18 +48,25 @@ $items = [
     ['C(KC_EQL)', 'Zoom In'],
     ['C(KC_MINS)', 'Zoom Out'],
     ['KC_DOT', 'Fit to Screen'],
+    ['S(KC_G)', 'Show Grid'],
+    ['S(KC_U)', 'Show Guides'],
+    ['S(KC_Y)', 'Show Ref Image on Canvas'],
+    ['C(S(KC_X))', 'Show Cursor'],
+    ['KC_TAB', 'Desktop/Tablet Mode'],
 
     // Tools
     ['KC_B', 'Brush Tool'],
+    ['S(KC_B)', 'Favorite Brush'],
     ['S(KC_E)', 'Last Erase Brush'],
     ['KC_E', 'Eraser'],
     ['KC_N', 'Blend'],
     ['KC_S', 'Smudge'],
+    ['S(KC_C)', 'Clone Tool'],
     ['KC_L', 'Fill'],
     ['KC_I', 'Pick Color'],
     ['KC_W', 'Water'],
-    ['C(KC_SCLN)', 'Decrease Water'],
-    ['C(KC_QUOT)', 'Increase Water'],
+    ['C(KC_SCLN)', 'Decrease Brush Water'],
+    ['C(KC_QUOT)', 'Increase Brush Water'],
     ['KC_Y', 'Dry'],
     ['KC_O', 'Blow'],
     ['KC_X', 'Mix Mode'],
@@ -70,6 +78,9 @@ $items = [
     ['S(KC_I)', 'Inks'],
     ['S(KC_M)', 'Markers'],
     ['S(KC_H)', 'Airbrushes'],
+    ['KC_T', 'Transform'],
+    ['LCA(KC_I)', 'Image Size'],
+    ['LCA(KC_C)', 'Canvas Size'],
 
     // Brushes & Painting
     ['KC_RBRC', 'Increase Brush Size'],
@@ -84,8 +95,16 @@ $items = [
     ['KC_4', 'Blend Mode'],
     ['KC_5', 'Erase Mode'],
     ['KC_V', 'Switch Paint/Blend'],
+    ['KC_A', 'Switch Paint/Erase'],
     ['A(KC_D)', 'Dirty Brush'],
     ['A(KC_M)', 'MultiColored Brush'],
+
+    // Working with Brush Presets
+    ['C(S(KC_C))', 'Copy Brush Preset'],
+    ['C(S(KC_V))', 'Paste Brush Preset'],
+    ['C(S(KC_P))', 'Duplicate/Save Brush Preset'],
+    ['C(S(KC_H))', 'Reset Brush Changes'],
+    ['C(S(KC_B))', 'Save Changes as Default'],
 
     // Working with Water
     ['KC_H', 'Show Wet'],
@@ -94,6 +113,7 @@ $items = [
     ['S(KC_V)', 'Wet All Visible'],
     ['S(KC_D)', 'Dry the Layer'],
     ['KC_F', 'Fast Dry'],
+    ['A(KC_T)', 'Enable/Disable Canvas Tilt'],
 
     // Favorite Brushes / Presets
     ['KC_6', 'Brush Preset 1'],
@@ -102,18 +122,24 @@ $items = [
     ['KC_9', 'Brush Preset 4'],
 
     // Panels
-    ['KC_F8', 'Brushes Panel'],
+    ['KC_F1', 'Help'],
+    ['KC_F3', 'Tools Panel'],
+    ['KC_F4', 'Properties Panel'],
+    ['KC_F5', 'Brush Creator'],
     ['KC_F6', 'Color Panel'],
     ['KC_F7', 'Layers Panel'],
+    ['KC_F8', 'Brushes Panel'],
+    ['KC_F10', 'Assets Panel'],
+    ['KC_F12', 'Visual Settings'],
     ['C(S(KC_M))', 'Mixing Palette'],
     ['C(KC_K)', 'Navigator'],
     ['C(S(KC_W))', 'Preview'],
-    ['KC_F3', 'Tools Panel'],
-    ['KC_F4', 'Properties Panel'],
-    ['KC_F10', 'Stencils Panel'],
-    ['KC_F12', 'Visual Settings'],
+    ['C(KC_L)', 'Tilt Panel'],
     ['S(KC_R)', 'Rulers'],
-    ['KC_F5', 'Brush Creator'],
+    ['C(S(KC_R))', 'Reference Images'],
+    ['C(KC_R)', 'Show/Hide Ref Images'],
+    ['C(KC_J)', 'Volume Presets'],
+    ['C(S(KC_T))', 'Record Time-lapse'],
 
     // Files
     ['C(KC_N)', 'New'],
@@ -135,10 +161,6 @@ $items = [
     ['C(KC_C)', 'Copy'],
     ['C(KC_V)', 'Paste'],
 
-    // View extras
-    ['S(KC_G)', 'Show Grid'],
-    ['KC_TAB', 'Desktop/Tablet Mode'],
-
     // Color Filters
     ['C(KC_M)', 'Brightness/Contrast'],
     ['C(KC_U)', 'Hue/Saturation'],
@@ -146,13 +168,18 @@ $items = [
     ['C(S(KC_F))', 'Color Filter'],
     ['C(S(KC_J))', 'Colorize'],
     ['C(S(KC_U))', 'Desaturate'],
-    ['C(KC_I)', 'Invert'],
+    ['C(KC_I)', 'Invert Colors'],
 
     // Color panel
     ['KC_G', 'View Greyscale'],
     ['C(KC_BSLS)', 'Switch Primary/Secondary'],
     ['A(KC_BSLS)', 'System Color Dialog'],
     ['KC_C', 'Use Primary Color'],
+
+    // Color Management
+    ['C(S(KC_K))', 'Color Management'],
+    ['C(KC_Y)', 'Proof Colors'],
+    ['C(S(KC_Y))', 'Gamut Warning'],
 
     // Selections
     ['KC_M', 'Selection Tool'],
@@ -162,6 +189,8 @@ $items = [
     ['LCA(KC_E)', 'Ellipse Selection'],
     ['C(A(KC_P))', 'Polygon Selection'],
     ['LCA(KC_P)', 'Polygon Selection'],
+    ['C(A(KC_L))', 'Freehand with Lines Selection'],
+    ['LCA(KC_L)', 'Freehand with Lines Selection'],
     ['C(A(KC_F))', 'Freehand Selection'],
     ['LCA(KC_F)', 'Freehand Selection'],
     ['C(A(KC_W))', 'Magic Wand'],
@@ -170,11 +199,23 @@ $items = [
     ['A(KC_Q)', 'Show/Hide Selection Lines'],
     ['C(S(KC_I))', 'Invert Selection'],
     ['C(KC_A)', 'Select All'],
+    ['C(KC_D)', 'Deselect All'],
     ['KC_ENT', 'Confirm'],
     ['KC_ESC', 'Cancel'],
 
+    // Selection Movement
+    ['KC_UP', 'Move Up 1px'],
+    ['KC_DOWN', 'Move Down 1px'],
+    ['KC_LEFT', 'Move Left 1px'],
+    ['KC_RIGHT', 'Move Right 1px'],
+    ['S(KC_UP)', 'Move Up 10px'],
+    ['S(KC_DOWN)', 'Move Down 10px'],
+    ['S(KC_LEFT)', 'Move Left 10px'],
+    ['S(KC_RIGHT)', 'Move Right 10px'],
+
     // Layers & Groups
     ['C(S(KC_N))', 'New Layer'],
+    ['LCA(KC_G)', 'New Group'],
     ['C(S(KC_D))', 'Duplicate Layer'],
     ['C(KC_E)', 'Merge Layers'],
     ['A(S(KC_D))', 'Remove Layer'],
@@ -184,14 +225,27 @@ $items = [
     ['C(S(KC_E))', 'Merge Visible'],
     ['C(A(KC_A))', 'Select All Layers'],
     ['LCA(KC_A)', 'Select All Layers'],
+    ['C(KC_DOT)', 'Show/Hide Layer Group'],
+    ['KC_DEL', 'Clear Layer'],
+    ['C(KC_SLSH)', 'Lock Layer'],
+    ['KC_SLSH', 'Lock Layer Transparency'],
+    ['A(KC_MINS)', 'Move Layers Up'],
+    ['A(KC_EQL)', 'Move Layers Down'],
+    ['A(KC_LBRC)', 'Select Prev Layer'],
+    ['A(KC_RBRC)', 'Select Next Layer'],
+    ['A(KC_N)', 'Rename Layer'],
     ['A(S(KC_T))', 'Tracing Layer'],
     ['LSA(KC_T)', 'Tracing Layer'],
 
-    // Blender-specific (common 3D app shortcuts)
+    // Stencils
+    ['LSA(KC_N)', 'Show/Hide Stencil'],
+
+    // Sliders
+    ['KC_PGUP', 'Increase Value +10'],
+    ['KC_PGDN', 'Decrease Value -10'],
+
+    // General/Other
     ['KC_SPC', 'Play/Pause'],
-    ['S(KC_B)', 'Render Border'],
-    ['KC_T', 'Transform'],
-    ['KC_A', 'Select All'],
 ];
 
 try {
