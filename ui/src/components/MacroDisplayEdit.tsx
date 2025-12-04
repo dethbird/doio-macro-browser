@@ -1,4 +1,6 @@
 import { useMemo, useEffect, useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faSave } from '@fortawesome/free-solid-svg-icons'
 import { humanize } from '../utils/humanize'
 import type { Translation, ViaProfile, LayerTranslation } from '../types'
 
@@ -308,9 +310,12 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, lay
     <div className="box has-background-dark">
       <div className="is-flex is-justify-content-space-between is-align-items-center mb-4">
         <h3 className="title is-5 has-text-light mb-0">
-          {parsedJson.name} - {layerName} (Edit)
+          {layerName} (Edit)
         </h3>
         <div className="is-flex is-align-items-center">
+          <span className="has-text-grey-light mr-3" style={{ fontSize: '12px' }}>
+            {parsedJson.name}
+          </span>
           {saveMessage && (
             <span className={`mr-3 is-size-7 ${saveMessage.startsWith('Error') ? 'has-text-danger' : 'has-text-success'}`}>
               {saveMessage}
@@ -320,8 +325,9 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, lay
             className={`button is-small is-success ${isSaving ? 'is-loading' : ''}`}
             onClick={handleSave}
             disabled={isSaving || !profileId}
+            title="Save Translations"
           >
-            Save Translations
+            <FontAwesomeIcon icon={faSave} />
           </button>
         </div>
       </div>

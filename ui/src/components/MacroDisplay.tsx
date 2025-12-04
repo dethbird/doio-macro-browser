@@ -165,9 +165,14 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
 
   return (
     <div className="box has-background-dark">
-      <h3 className="title is-5 has-text-light mb-4">
-        {parsedJson?.name} - {layerName}
-      </h3>
+      <div className="is-flex is-justify-content-space-between is-align-items-start mb-4">
+        <h3 className="title is-5 has-text-light mb-0">
+          {layerName}
+        </h3>
+        <span className="has-text-grey-light" style={{ fontSize: '12px' }}>
+          {parsedJson?.name}
+        </span>
+      </div>
       
       {/* Buttons - 4x4 grid */}
       <div className="mb-5">

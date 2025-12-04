@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCog } from '@fortawesome/free-solid-svg-icons'
+import { faCog, faPen, faEye } from '@fortawesome/free-solid-svg-icons'
 import ProfileSelector from './components/ProfileSelector'
 import MacroDisplay from './components/MacroDisplay'
 import MacroDisplayEdit from './components/MacroDisplayEdit'
@@ -316,8 +316,9 @@ function App() {
             <button 
               className={`button is-small ${isEditMode ? 'is-warning' : 'is-info'}`}
               onClick={() => setIsEditMode(!isEditMode)}
+              title={isEditMode ? 'View' : 'Edit Translations'}
             >
-              {isEditMode ? 'View JSON' : 'Edit Translations'}
+              <FontAwesomeIcon icon={isEditMode ? faEye : faPen} />
             </button>
           </div>
         )}
