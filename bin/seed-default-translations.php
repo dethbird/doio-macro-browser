@@ -1,7 +1,7 @@
 <?php
 /**
  * Seed default (generic) translations for common VIA macros.
- * These apply to all applications as fallback when no app-specific translation exists.
+ * These apply to all profiles as fallback when no profile-specific translation exists.
  * 
  * Usage: php bin/seed-default-translations.php
  */
@@ -15,7 +15,7 @@ if (!file_exists($dbPath)) {
     exit(1);
 }
 
-// Default translations (application_id = NULL)
+// Default translations (profile_id = NULL)
 // These are common shortcuts used across painting/creative apps like Rebelle, Photoshop, etc.
 $items = [
     // Color adjustments
@@ -202,8 +202,8 @@ try {
     $pdo->exec('PRAGMA foreign_keys = ON');
 
     // Check for existing generic translation
-    $sel = $pdo->prepare('SELECT id FROM translation WHERE via_macro = :m AND application_id IS NULL LIMIT 1');
-    $ins = $pdo->prepare('INSERT INTO translation (via_macro, application_id, human_label) VALUES (:m, NULL, :h)');
+    $sel = $pdo->prepare('SELECT id FROM translation WHERE via_macro = :m AND profile_id IS NULL LIMIT 1');
+    $ins = $pdo->prepare('INSERT INTO translation (via_macro, profile_id, human_label) VALUES (:m, NULL, :h)');
     $upd = $pdo->prepare('UPDATE translation SET human_label = :h WHERE id = :id');
 
     $pdo->beginTransaction();

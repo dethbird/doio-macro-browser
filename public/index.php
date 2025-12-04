@@ -265,16 +265,16 @@ $app->put('/api/applications/{application_id}/profiles/{id}', function (Request 
     ]);
 });
 
-// API: Get all translations (optionally filtered by application_id)
+// API: Get all translations (optionally filtered by profile_id)
 $app->get('/api/translations', function (Request $request, Response $response) {
     $db = getDb();
     $params = $request->getQueryParams();
-    $applicationId = $params['application_id'] ?? null;
+    $profileId = $params['profile_id'] ?? null;
     
-    if ($applicationId) {
-        // Get app-specific + generic translations
-        $stmt = $db->prepare('SELECT * FROM translation WHERE application_id = ? OR application_id IS NULL ORDER BY via_macro');
-        $stmt->execute([$applicationId]);
+    if ($profileId) {
+        // Get profile-specific + generic translations
+        $stmt = $db->prepare('SELECT * FROM translation WHERE profile_id = ? OR profile_id IS NULL ORDER BY via_macro');
+        $stmt->execute([$profileId]);
     } else {
         // Get all translations
         $stmt = $db->query('SELECT * FROM translation ORDER BY via_macro');
@@ -289,7 +289,7 @@ $app->post('/api/translations', function (Request $request, Response $response) 
     $data = json_decode($request->getBody()->getContents(), true);
     $viaMacro = trim($data['via_macro'] ?? '');
     $humanLabel = trim($data['human_label'] ?? '');
-    $applicationId = isset($data['application_id']) ? (int)$data['application_id'] : null;
+    $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : null;
     
     if (empty($viaMacro) || empty($humanLabel)) {
         return jsonResponse($response, ['error' => 'via_macro and human_label are required'], 400);
@@ -297,21 +297,21 @@ $app->post('/api/translations', function (Request $request, Response $response) 
     
     $db = getDb();
     
-    // Verify application exists if specified
-    if ($applicationId !== null) {
-        $stmt = $db->prepare('SELECT id FROM application WHERE id = ?');
-        $stmt->execute([$applicationId]);
+    // Verify profile exists if specified
+    if ($profileId !== null) {
+        $stmt = $db->prepare('SELECT id FROM profile WHERE id = ?');
+        $stmt->execute([$profileId]);
         if (!$stmt->fetch()) {
-            return jsonResponse($response, ['error' => 'Application not found'], 404);
+            return jsonResponse($response, ['error' => 'Profile not found'], 404);
         }
     }
     
     // Check for existing translation
-    if ($applicationId !== null) {
-        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND application_id = ?');
-        $stmt->execute([$viaMacro, $applicationId]);
+    if ($profileId !== null) {
+        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND profile_id = ?');
+        $stmt->execute([$viaMacro, $profileId]);
     } else {
-        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND application_id IS NULL');
+        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND profile_id IS NULL');
         $stmt->execute([$viaMacro]);
     }
     
@@ -319,15 +319,15 @@ $app->post('/api/translations', function (Request $request, Response $response) 
         return jsonResponse($response, ['error' => 'Translation already exists'], 409);
     }
     
-    $stmt = $db->prepare('INSERT INTO translation (via_macro, application_id, human_label) VALUES (?, ?, ?)');
-    $stmt->execute([$viaMacro, $applicationId, $humanLabel]);
+    $stmt = $db->prepare('INSERT INTO translation (via_macro, profile_id, human_label) VALUES (?, ?, ?)');
+    $stmt->execute([$viaMacro, $profileId, $humanLabel]);
     
     $id = $db->lastInsertId();
     
     return jsonResponse($response, [
         'id' => (int)$id,
         'via_macro' => $viaMacro,
-        'application_id' => $applicationId,
+        'profile_id' => $profileId,
         'human_label' => $humanLabel
     ], 201);
 });
@@ -356,7 +356,7 @@ $app->put('/api/translations/{id}', function (Request $request, Response $respon
     return jsonResponse($response, [
         'id' => (int)$translation['id'],
         'via_macro' => $translation['via_macro'],
-        'application_id' => $translation['application_id'] ? (int)$translation['application_id'] : null,
+        'profile_id' => $translation['profile_id'] ? (int)$translation['profile_id'] : null,
         'human_label' => $humanLabel
     ]);
 });
@@ -377,16 +377,16 @@ $app->delete('/api/translations/{id}', function (Request $request, Response $res
     return jsonResponse($response, ['success' => true]);
 });
 
-// API: Bulk save translations for an application
-// Body: { application_id: number, translations: { [via_macro: string]: string } }
+// API: Bulk save translations for a profile
+// Body: { profile_id: number, translations: { [via_macro: string]: string } }
 // Empty string values will delete the translation, non-empty will upsert
 $app->post('/api/translations/bulk', function (Request $request, Response $response) {
     $data = json_decode($request->getBody()->getContents(), true);
-    $applicationId = isset($data['application_id']) ? (int)$data['application_id'] : null;
+    $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : null;
     $translations = $data['translations'] ?? [];
     
-    if ($applicationId === null) {
-        return jsonResponse($response, ['error' => 'application_id is required'], 400);
+    if ($profileId === null) {
+        return jsonResponse($response, ['error' => 'profile_id is required'], 400);
     }
     
     if (!is_array($translations)) {
@@ -395,11 +395,11 @@ $app->post('/api/translations/bulk', function (Request $request, Response $respo
     
     $db = getDb();
     
-    // Verify application exists
-    $stmt = $db->prepare('SELECT id FROM application WHERE id = ?');
-    $stmt->execute([$applicationId]);
+    // Verify profile exists
+    $stmt = $db->prepare('SELECT id FROM profile WHERE id = ?');
+    $stmt->execute([$profileId]);
     if (!$stmt->fetch()) {
-        return jsonResponse($response, ['error' => 'Application not found'], 404);
+        return jsonResponse($response, ['error' => 'Profile not found'], 404);
     }
     
     $saved = 0;
@@ -411,9 +411,9 @@ $app->post('/api/translations/bulk', function (Request $request, Response $respo
         
         if (empty($viaMacro)) continue;
         
-        // Check if translation exists for this app
-        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND application_id = ?');
-        $stmt->execute([$viaMacro, $applicationId]);
+        // Check if translation exists for this profile
+        $stmt = $db->prepare('SELECT id FROM translation WHERE via_macro = ? AND profile_id = ?');
+        $stmt->execute([$viaMacro, $profileId]);
         $existing = $stmt->fetch();
         
         if (empty($humanLabel)) {
@@ -429,8 +429,8 @@ $app->post('/api/translations/bulk', function (Request $request, Response $respo
                 $stmt = $db->prepare('UPDATE translation SET human_label = ? WHERE id = ?');
                 $stmt->execute([$humanLabel, $existing['id']]);
             } else {
-                $stmt = $db->prepare('INSERT INTO translation (via_macro, application_id, human_label) VALUES (?, ?, ?)');
-                $stmt->execute([$viaMacro, $applicationId, $humanLabel]);
+                $stmt = $db->prepare('INSERT INTO translation (via_macro, profile_id, human_label) VALUES (?, ?, ?)');
+                $stmt->execute([$viaMacro, $profileId, $humanLabel]);
             }
             $saved++;
         }
