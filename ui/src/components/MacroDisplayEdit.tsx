@@ -1,12 +1,16 @@
 import { useMemo, useEffect, useState } from 'react'
 import { humanize } from '../utils/humanize'
-import type { Translation, ViaProfile } from '../types'
+import type { Translation, ViaProfile, LayerTranslation } from '../types'
 
 interface MacroDisplayEditProps {
   profileJson: unknown
   profileId: number | null
   currentLayer: number
+  layerName: string
+  layerCount: number
+  layerTranslations: LayerTranslation[]
   onSave?: () => void
+  onLayerTranslationsSaved?: () => void
 }
 
 // Layer index mapping for DOIO KB16
@@ -48,9 +52,10 @@ interface TranslationInfo {
   appSpecific: string | null
 }
 
-function MacroDisplayEdit({ profileJson, profileId, currentLayer, onSave }: MacroDisplayEditProps) {
+function MacroDisplayEdit({ profileJson, profileId, currentLayer, layerName, layerCount, layerTranslations, onSave, onLayerTranslationsSaved }: MacroDisplayEditProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
   const [overrides, setOverrides] = useState<Map<string, string>>(new Map())
+  const [layerNameOverrides, setLayerNameOverrides] = useState<Map<number, string>>(new Map())
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
@@ -80,6 +85,15 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, onSave }: Macr
     }
     setOverrides(profileOverrides)
   }, [translations])
+
+  // Initialize layer name overrides from layerTranslations
+  useEffect(() => {
+    const overrides = new Map<number, string>()
+    for (const lt of layerTranslations) {
+      overrides.set(lt.layer_index, lt.human_label)
+    }
+    setLayerNameOverrides(overrides)
+  }, [layerTranslations])
 
   const parsedJson = useMemo(() => {
     if (!profileJson) return null
@@ -121,6 +135,14 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, onSave }: Macr
     })
   }
 
+  const handleLayerNameChange = (layerIndex: number, value: string) => {
+    setLayerNameOverrides(prev => {
+      const next = new Map(prev)
+      next.set(layerIndex, value)
+      return next
+    })
+  }
+
   const handleSave = async () => {
     if (!profileId) {
       setSaveMessage('No profile selected')
@@ -137,7 +159,14 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, onSave }: Macr
       translationsToSave[macro] = value
     })
 
+    // Build layer translations object
+    const layersToSave: Record<number, string> = {}
+    layerNameOverrides.forEach((value, layerIndex) => {
+      layersToSave[layerIndex] = value
+    })
+
     try {
+      // Save macro translations
       const res = await fetch('/api/translations/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,15 +178,27 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, onSave }: Macr
 
       const data = await res.json()
 
-      if (res.ok) {
-        setSaveMessage(`Saved ${data.saved} translation(s), removed ${data.deleted}`)
+      // Save layer translations
+      const layerRes = await fetch(`/api/profiles/${profileId}/layer-translations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ layers: layersToSave })
+      })
+
+      const layerData = await layerRes.json()
+
+      if (res.ok && layerRes.ok) {
+        const macroMsg = `${data.saved} macro translation(s)`
+        const layerMsg = `${layerData.saved} layer name(s)`
+        setSaveMessage(`Saved ${macroMsg}, ${layerMsg}`)
         // Refresh translations
         const refreshRes = await fetch(`/api/translations?profile_id=${profileId}`)
         const refreshData = await refreshRes.json()
         setTranslations(refreshData)
         onSave?.()
+        onLayerTranslationsSaved?.()
       } else {
-        setSaveMessage(`Error: ${data.error}`)
+        setSaveMessage(`Error: ${data.error || layerData.error}`)
       }
     } catch (err) {
       setSaveMessage('Failed to save translations')
@@ -223,7 +264,7 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, onSave }: Macr
     <div className="box has-background-dark">
       <div className="is-flex is-justify-content-space-between is-align-items-center mb-4">
         <h3 className="title is-5 has-text-light mb-0">
-          {parsedJson.name} - Layer {currentLayer + 1} (Edit)
+          {parsedJson.name} - {layerName} (Edit)
         </h3>
         <div className="is-flex is-align-items-center">
           {saveMessage && (
@@ -238,6 +279,43 @@ function MacroDisplayEdit({ profileJson, profileId, currentLayer, onSave }: Macr
           >
             Save Translations
           </button>
+        </div>
+      </div>
+
+      {/* Layer Names Section */}
+      <div className="mb-5">
+        <h4 className="title is-6 has-text-success mb-3">Layer Names</h4>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(4, 1fr)', 
+          gap: '8px',
+          backgroundColor: '#2b2b2b',
+          padding: '8px',
+          borderRadius: '4px'
+        }}>
+          {Array.from({ length: layerCount }, (_, i) => (
+            <div key={i} style={{ 
+              padding: '8px',
+              border: i === currentLayer ? '2px solid #48c78e' : '1px solid #4a4a4a',
+              borderRadius: '4px',
+              backgroundColor: i === currentLayer ? '#1a3a2a' : '#363636'
+            }}>
+              <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>
+                Layer {i + 1}
+              </div>
+              <input
+                type="text"
+                style={{
+                  ...inputStyle,
+                  marginTop: 0,
+                  backgroundColor: i === currentLayer ? '#2a4a3a' : '#2b2b2b'
+                }}
+                placeholder={`Layer ${i + 1}`}
+                value={layerNameOverrides.get(i) ?? ''}
+                onChange={(e) => handleLayerNameChange(i, e.target.value)}
+              />
+            </div>
+          ))}
         </div>
       </div>
       

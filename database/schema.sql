@@ -28,3 +28,16 @@ CREATE TABLE IF NOT EXISTS translation (
 );
 
 CREATE INDEX IF NOT EXISTS idx_translation_lookup ON translation(via_macro, profile_id);
+
+-- Layer translations: layer index → human-friendly label (profile-specific)
+CREATE TABLE IF NOT EXISTS layer_translation (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id INTEGER NOT NULL,
+    layer_index INTEGER NOT NULL,
+    human_label TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE,
+    UNIQUE(profile_id, layer_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_layer_translation_lookup ON layer_translation(profile_id, layer_index);

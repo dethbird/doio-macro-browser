@@ -18,6 +18,13 @@ export interface Translation {
   human_label: string
 }
 
+export interface LayerTranslation {
+  id: number
+  profile_id: number
+  layer_index: number
+  human_label: string
+}
+
 // VIA JSON structure
 export interface ViaProfile {
   name: string

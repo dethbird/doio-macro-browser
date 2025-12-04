@@ -439,5 +439,70 @@ $app->post('/api/translations/bulk', function (Request $request, Response $respo
     return jsonResponse($response, ['success' => true, 'saved' => $saved, 'deleted' => $deleted]);
 });
 
+// API: Get layer translations for a profile
+$app->get('/api/profiles/{id}/layer-translations', function (Request $request, Response $response, array $args) {
+    $db = getDb();
+    $stmt = $db->prepare('SELECT * FROM layer_translation WHERE profile_id = ? ORDER BY layer_index');
+    $stmt->execute([$args['id']]);
+    $translations = $stmt->fetchAll();
+    return jsonResponse($response, $translations);
+});
+
+// API: Bulk save layer translations for a profile
+// Body: { layers: { [layer_index: number]: string } }
+// Empty string values will delete the translation, non-empty will upsert
+$app->post('/api/profiles/{id}/layer-translations', function (Request $request, Response $response, array $args) {
+    $profileId = (int)$args['id'];
+    $data = json_decode($request->getBody()->getContents(), true);
+    $layers = $data['layers'] ?? [];
+    
+    if (!is_array($layers)) {
+        return jsonResponse($response, ['error' => 'layers must be an object'], 400);
+    }
+    
+    $db = getDb();
+    
+    // Verify profile exists
+    $stmt = $db->prepare('SELECT id FROM profile WHERE id = ?');
+    $stmt->execute([$profileId]);
+    if (!$stmt->fetch()) {
+        return jsonResponse($response, ['error' => 'Profile not found'], 404);
+    }
+    
+    $saved = 0;
+    $deleted = 0;
+    
+    foreach ($layers as $layerIndex => $humanLabel) {
+        $layerIndex = (int)$layerIndex;
+        $humanLabel = trim($humanLabel);
+        
+        // Check if translation exists
+        $stmt = $db->prepare('SELECT id FROM layer_translation WHERE profile_id = ? AND layer_index = ?');
+        $stmt->execute([$profileId, $layerIndex]);
+        $existing = $stmt->fetch();
+        
+        if (empty($humanLabel)) {
+            // Delete if exists and value is empty
+            if ($existing) {
+                $stmt = $db->prepare('DELETE FROM layer_translation WHERE id = ?');
+                $stmt->execute([$existing['id']]);
+                $deleted++;
+            }
+        } else {
+            // Upsert
+            if ($existing) {
+                $stmt = $db->prepare('UPDATE layer_translation SET human_label = ? WHERE id = ?');
+                $stmt->execute([$humanLabel, $existing['id']]);
+            } else {
+                $stmt = $db->prepare('INSERT INTO layer_translation (profile_id, layer_index, human_label) VALUES (?, ?, ?)');
+                $stmt->execute([$profileId, $layerIndex, $humanLabel]);
+            }
+            $saved++;
+        }
+    }
+    
+    return jsonResponse($response, ['success' => true, 'saved' => $saved, 'deleted' => $deleted]);
+});
+
 $app->run();
 

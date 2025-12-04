@@ -4,7 +4,7 @@ import { faCog } from '@fortawesome/free-solid-svg-icons'
 import ProfileSelector from './components/ProfileSelector'
 import MacroDisplay from './components/MacroDisplay'
 import MacroDisplayEdit from './components/MacroDisplayEdit'
-import type { Application, Profile, ViaProfile } from './types'
+import type { Application, Profile, ViaProfile, LayerTranslation } from './types'
 
 const MAX_LAYERS = 4
 const SWIPE_THRESHOLD = 50 // Minimum swipe distance in pixels
@@ -15,6 +15,7 @@ function App() {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
   const [profileJson, setProfileJson] = useState<unknown>(null)
+  const [layerTranslations, setLayerTranslations] = useState<LayerTranslation[]>([])
   const [isEditMode, setIsEditMode] = useState(false)
   const [currentLayer, setCurrentLayer] = useState(() => {
     const saved = localStorage.getItem('currentLayer')
@@ -76,6 +77,18 @@ function App() {
     }
   }, [selectedApplication])
 
+  // Fetch layer translations when profile changes
+  useEffect(() => {
+    if (selectedProfile) {
+      fetch(`/api/profiles/${selectedProfile.id}/layer-translations`)
+        .then(res => res.json())
+        .then(data => setLayerTranslations(data))
+        .catch(() => setLayerTranslations([]))
+    } else {
+      setLayerTranslations([])
+    }
+  }, [selectedProfile])
+
   // Auto-open profile selector when no app or profile is selected
   useEffect(() => {
     if (!selectedApplication || !selectedProfile) {
@@ -126,6 +139,12 @@ function App() {
   })()
 
   const layerCount = parsedProfile?.layers?.length ?? MAX_LAYERS
+
+  // Get translated layer name or default
+  const getLayerName = (index: number): string => {
+    const translation = layerTranslations.find(t => t.layer_index === index)
+    return translation?.human_label || `Layer ${index + 1}`
+  }
 
   const handlePrevLayer = () => {
     setCurrentLayer(prev => {
@@ -285,7 +304,7 @@ function App() {
                 ← Prev
               </button>
               <span className="has-text-light mx-3">
-                Layer {currentLayer + 1} of {layerCount}
+                {getLayerName(currentLayer)} ({currentLayer + 1} of {layerCount})
               </span>
               <button 
                 className="button is-small is-dark ml-2"
@@ -308,12 +327,25 @@ function App() {
             profileJson={profileJson} 
             profileId={selectedProfile?.id ?? null}
             currentLayer={currentLayer}
+            layerName={getLayerName(currentLayer)}
+            layerCount={layerCount}
+            layerTranslations={layerTranslations}
+            onLayerTranslationsSaved={() => {
+              // Refresh layer translations after save
+              if (selectedProfile) {
+                fetch(`/api/profiles/${selectedProfile.id}/layer-translations`)
+                  .then(res => res.json())
+                  .then(data => setLayerTranslations(data))
+                  .catch(() => {})
+              }
+            }}
           />
         ) : (
           <MacroDisplay 
             profileJson={profileJson} 
             currentLayer={currentLayer}
             profileId={selectedProfile?.id ?? null}
+            layerName={getLayerName(currentLayer)}
           />
         )}
       </div>

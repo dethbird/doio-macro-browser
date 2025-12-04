@@ -6,6 +6,7 @@ interface MacroDisplayProps {
   profileJson: unknown
   currentLayer: number
   profileId: number | null
+  layerName: string
 }
 
 // Layer index mapping for DOIO KB16
@@ -43,7 +44,7 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '4px',
 }
 
-function MacroDisplay({ profileJson, currentLayer, profileId }: MacroDisplayProps) {
+function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: MacroDisplayProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
 
   // Fetch translations when profileId changes
@@ -137,7 +138,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId }: MacroDisplayProp
   return (
     <div className="box has-background-dark">
       <h3 className="title is-5 has-text-light mb-4">
-        {parsedJson?.name} - Layer {currentLayer + 1}
+        {parsedJson?.name} - {layerName}
       </h3>
       
       {/* Buttons - 4x4 grid */}
