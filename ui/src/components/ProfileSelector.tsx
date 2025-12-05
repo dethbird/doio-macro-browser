@@ -55,16 +55,12 @@ function ProfileSelector({
     if (selectedApplication && !showProfileSelector) {
       setShowProfileSelector(true)
     } else if (!selectedApplication && showProfileSelector) {
-      // Cartoony close: slight expand then quick shrink
+      // Slide up to close
       if (profileSelectorRef.current) {
-        const tl = gsap.timeline({
+        gsap.to(profileSelectorRef.current, {
+          height: 0, opacity: 0, marginTop: 0, marginBottom: 0,
+          duration: 0.25, ease: 'power2.inOut',
           onComplete: () => setShowProfileSelector(false)
-        })
-        tl.to(profileSelectorRef.current, {
-          scaleY: 1.1, scaleX: 1.02, duration: 0.1, ease: 'power1.out'
-        })
-        tl.to(profileSelectorRef.current, {
-          scaleY: 0, scaleX: 0.8, opacity: 0, duration: 0.15, ease: 'back.in(2)'
         })
       } else {
         setShowProfileSelector(false)
@@ -76,8 +72,8 @@ function ProfileSelector({
   useEffect(() => {
     if (showProfileSelector && profileSelectorRef.current) {
       gsap.fromTo(profileSelectorRef.current,
-        { scaleY: 0, scaleX: 0.8, opacity: 0 },
-        { scaleY: 1, scaleX: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.5)' }
+        { height: 0, opacity: 0 },
+        { height: 'auto', opacity: 1, duration: 0.35, ease: 'back.out(1.5)' }
       )
     }
   }, [showProfileSelector])
@@ -87,16 +83,12 @@ function ProfileSelector({
     if (selectedProfile && !showFileUpload) {
       setShowFileUpload(true)
     } else if (!selectedProfile && showFileUpload) {
-      // Cartoony close: slight expand then quick shrink
+      // Slide up to close
       if (fileUploadRef.current) {
-        const tl = gsap.timeline({
+        gsap.to(fileUploadRef.current, {
+          height: 0, opacity: 0, marginTop: 0, marginBottom: 0,
+          duration: 0.25, ease: 'power2.inOut',
           onComplete: () => setShowFileUpload(false)
-        })
-        tl.to(fileUploadRef.current, {
-          scaleY: 1.1, scaleX: 1.02, duration: 0.1, ease: 'power1.out'
-        })
-        tl.to(fileUploadRef.current, {
-          scaleY: 0, scaleX: 0.8, opacity: 0, duration: 0.15, ease: 'back.in(2)'
         })
       } else {
         setShowFileUpload(false)
@@ -108,8 +100,8 @@ function ProfileSelector({
   useEffect(() => {
     if (showFileUpload && fileUploadRef.current) {
       gsap.fromTo(fileUploadRef.current,
-        { scaleY: 0, scaleX: 0.8, opacity: 0 },
-        { scaleY: 1, scaleX: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.5)' }
+        { height: 0, opacity: 0 },
+        { height: 'auto', opacity: 1, duration: 0.35, ease: 'back.out(1.5)' }
       )
     }
   }, [showFileUpload])
