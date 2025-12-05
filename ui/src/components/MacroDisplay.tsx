@@ -176,7 +176,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
       
       {/* Buttons - 4x4 grid */}
       <div className="mb-5">
-        <h4 className="title is-6 has-text-info mb-3">Buttons</h4>
+        <h4 className="title is-6 has-text-info mb-3">🎮 Buttons</h4>
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(4, 1fr)', 
@@ -195,7 +195,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
       
       {/* Encoders - 3 rows x 4 columns (Name, Left Turn, Right Turn, Press) */}
       <div>
-        <h4 className="title is-6 has-text-warning mb-3">Encoders</h4>
+        <h4 className="title is-6 has-text-warning mb-3">🎛️ Encoders</h4>
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: 'auto 1fr 1fr 1fr', 

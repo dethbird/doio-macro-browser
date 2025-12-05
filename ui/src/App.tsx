@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCog, faPen, faEye } from '@fortawesome/free-solid-svg-icons'
+import { faCog, faPen, faEye, faPlug } from '@fortawesome/free-solid-svg-icons'
 import ProfileSelector from './components/ProfileSelector'
 import MacroDisplay from './components/MacroDisplay'
 import MacroDisplayEdit from './components/MacroDisplayEdit'
+import { useKeyboardHID } from './hooks/useKeyboardHID'
 import type { Application, Profile, ViaProfile, LayerTranslation } from './types'
 
 const MAX_LAYERS = 4
@@ -32,6 +33,12 @@ function App() {
       return true
     }
     return saved === null ? true : saved === 'true'
+  })
+
+  // WebHID keyboard connection for layer sync
+  const { isConnected, isSupported, connect, disconnect, error: hidError, sendLayerSwitch } = useKeyboardHID((layer) => {
+    setCurrentLayer(layer)
+    localStorage.setItem('currentLayer', String(layer))
   })
 
   // Fetch applications and restore selection from localStorage
@@ -150,6 +157,10 @@ function App() {
     setCurrentLayer(prev => {
       const next = prev > 0 ? prev - 1 : layerCount - 1
       localStorage.setItem('currentLayer', String(next))
+      // Send layer switch to keyboard if connected
+      if (isConnected) {
+        sendLayerSwitch(next)
+      }
       return next
     })
   }
@@ -158,6 +169,10 @@ function App() {
     setCurrentLayer(prev => {
       const next = prev < layerCount - 1 ? prev + 1 : 0
       localStorage.setItem('currentLayer', String(next))
+      // Send layer switch to keyboard if connected
+      if (isConnected) {
+        sendLayerSwitch(next)
+      }
       return next
     })
   }
@@ -272,6 +287,15 @@ function App() {
               <span className="has-text-weight-semibold">JSON:</span> {selectedProfile?.json_filename || '—'}
             </div>
           )}
+          <button 
+            className={`button is-ghost ${isConnected ? 'has-text-success' : 'has-text-grey-light'}`}
+            title={!isSupported ? 'WebHID not supported (requires Chrome/Edge on HTTPS)' : isConnected ? 'Keyboard connected - Click to disconnect' : hidError || 'Connect keyboard via USB'}
+            onClick={isConnected ? disconnect : connect}
+            disabled={!isSupported}
+            style={!isSupported ? { opacity: 0.3 } : undefined}
+          >
+            <FontAwesomeIcon icon={faPlug} />
+          </button>
           <button 
             className={`button is-ghost ${isProfileSelectorOpen ? 'has-text-success' : 'has-text-grey-light'}`}
             title={isProfileSelectorOpen ? 'Collapse selector' : 'Expand selector'}
