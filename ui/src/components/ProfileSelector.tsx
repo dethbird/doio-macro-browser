@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import gsap from 'gsap'
 import Modal from './Modal'
 import ApplicationForm from './Forms/Application'
 import ProfileForm from './Forms/Profile'
@@ -30,6 +31,88 @@ function ProfileSelector({
   const [isAppModalOpen, setIsAppModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
+  
+  // Track visibility for animations
+  const [showProfileSelector, setShowProfileSelector] = useState(false)
+  const [showFileUpload, setShowFileUpload] = useState(false)
+  
+  const containerRef = useRef<HTMLDivElement>(null)
+  const profileSelectorRef = useRef<HTMLDivElement>(null)
+  const fileUploadRef = useRef<HTMLDivElement>(null)
+
+  // Bounce in animation on mount
+  useLayoutEffect(() => {
+    if (containerRef.current) {
+      gsap.fromTo(containerRef.current, 
+        { scale: 0.8, opacity: 0, y: -20 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.7)' }
+      )
+    }
+  }, [])
+
+  // Handle profile selector visibility with animations
+  useEffect(() => {
+    if (selectedApplication && !showProfileSelector) {
+      setShowProfileSelector(true)
+    } else if (!selectedApplication && showProfileSelector) {
+      // Cartoony close: slight expand then quick shrink
+      if (profileSelectorRef.current) {
+        const tl = gsap.timeline({
+          onComplete: () => setShowProfileSelector(false)
+        })
+        tl.to(profileSelectorRef.current, {
+          scaleY: 1.1, scaleX: 1.02, duration: 0.1, ease: 'power1.out'
+        })
+        tl.to(profileSelectorRef.current, {
+          scaleY: 0, scaleX: 0.8, opacity: 0, duration: 0.15, ease: 'back.in(2)'
+        })
+      } else {
+        setShowProfileSelector(false)
+      }
+    }
+  }, [selectedApplication, showProfileSelector])
+
+  // Animate profile selector in when it becomes visible
+  useEffect(() => {
+    if (showProfileSelector && profileSelectorRef.current) {
+      gsap.fromTo(profileSelectorRef.current,
+        { scaleY: 0, scaleX: 0.8, opacity: 0 },
+        { scaleY: 1, scaleX: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.5)' }
+      )
+    }
+  }, [showProfileSelector])
+
+  // Handle file upload visibility with animations
+  useEffect(() => {
+    if (selectedProfile && !showFileUpload) {
+      setShowFileUpload(true)
+    } else if (!selectedProfile && showFileUpload) {
+      // Cartoony close: slight expand then quick shrink
+      if (fileUploadRef.current) {
+        const tl = gsap.timeline({
+          onComplete: () => setShowFileUpload(false)
+        })
+        tl.to(fileUploadRef.current, {
+          scaleY: 1.1, scaleX: 1.02, duration: 0.1, ease: 'power1.out'
+        })
+        tl.to(fileUploadRef.current, {
+          scaleY: 0, scaleX: 0.8, opacity: 0, duration: 0.15, ease: 'back.in(2)'
+        })
+      } else {
+        setShowFileUpload(false)
+      }
+    }
+  }, [selectedProfile, showFileUpload])
+
+  // Animate file upload in when it becomes visible
+  useEffect(() => {
+    if (showFileUpload && fileUploadRef.current) {
+      gsap.fromTo(fileUploadRef.current,
+        { scaleY: 0, scaleX: 0.8, opacity: 0 },
+        { scaleY: 1, scaleX: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.5)' }
+      )
+    }
+  }, [showFileUpload])
 
   const handleApplicationSaved = (application: Application) => {
     onApplicationAdded(application)
@@ -69,7 +152,7 @@ function ProfileSelector({
   }
 
   return (
-    <div className="box has-background-dark">
+    <div ref={containerRef} className="box has-background-dark">
       <div className="field has-addons">
         <div className="control is-expanded">
           <div className="select is-fullwidth">
@@ -95,8 +178,8 @@ function ProfileSelector({
         </div>
       </div>
 
-      {selectedApplication && (
-        <div className="field has-addons">
+      {showProfileSelector && (
+        <div ref={profileSelectorRef} className="field has-addons" style={{ overflow: 'hidden' }}>
           <div className="control is-expanded">
             <div className="select is-fullwidth">
               <select
@@ -122,8 +205,8 @@ function ProfileSelector({
         </div>
       )}
 
-      {selectedProfile && (
-        <div className="field">
+      {showFileUpload && (
+        <div ref={fileUploadRef} className="field" style={{ overflow: 'hidden' }}>
           <div className="control">
             <div className={`file has-name is-fullwidth ${uploading ? 'is-loading' : ''}`}>
               <label className="file-label">
@@ -143,7 +226,7 @@ function ProfileSelector({
               </label>
             </div>
           </div>
-          {selectedProfile.json_filename && (
+          {selectedProfile?.json_filename && (
             <p className="help has-text-grey-light">
               Current file: <strong>{selectedProfile.json_filename}</strong>
             </p>
