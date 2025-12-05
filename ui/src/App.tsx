@@ -239,7 +239,7 @@ function App() {
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [layerCount])
+  }, [handlePrevLayer, handleNextLayer])
 
   const handleApplicationAdded = (application: Application) => {
     setApplications(prev => [...prev, application].sort((a, b) => a.name.localeCompare(b.name)))
