@@ -18,6 +18,7 @@ function App() {
   const [profileJson, setProfileJson] = useState<unknown>(null)
   const [layerTranslations, setLayerTranslations] = useState<LayerTranslation[]>([])
   const [isEditMode, setIsEditMode] = useState(false)
+  const [hasRestoredState, setHasRestoredState] = useState(false)
   const [currentLayer, setCurrentLayer] = useState(() => {
     const saved = localStorage.getItem('currentLayer')
     return saved ? Number(saved) : 0
@@ -77,10 +78,19 @@ function App() {
               setProfileJson(savedProfile.json || null)
             }
           }
+          // Mark restoration complete after profiles are loaded
+          setHasRestoredState(true)
         })
-        .catch(err => console.error('Failed to fetch profiles:', err))
+        .catch(err => {
+          console.error('Failed to fetch profiles:', err)
+          setHasRestoredState(true)
+        })
     } else {
       setProfiles([])
+      // If no saved application, restoration is complete
+      if (!localStorage.getItem('selectedApplicationId')) {
+        setHasRestoredState(true)
+      }
     }
   }, [selectedApplication])
 
@@ -96,12 +106,12 @@ function App() {
     }
   }, [selectedProfile])
 
-  // Auto-open profile selector when no app or profile is selected
+  // Auto-open profile selector when no app or profile is selected (only after restoration)
   useEffect(() => {
-    if (!selectedApplication || !selectedProfile) {
+    if (hasRestoredState && (!selectedApplication || !selectedProfile)) {
       setIsProfileSelectorOpen(true)
     }
-  }, [selectedApplication, selectedProfile])
+  }, [hasRestoredState, selectedApplication, selectedProfile])
 
   const handleApplicationChange = (appId: number | null) => {
     const app = applications.find(a => a.id === appId) || null

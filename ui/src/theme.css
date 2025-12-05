@@ -16,8 +16,9 @@
   --color-error: #ff6b6b;
 }
 
-/* Body background */
-body {
+/* Ensure full viewport coverage */
+html, body, #root {
+  min-height: 100vh;
   background-color: var(--color-black) !important;
 }
 
@@ -25,6 +26,11 @@ body {
 .box {
   background-color: var(--color-dark-1) !important;
   border: 1px solid var(--color-border);
+}
+
+/* Background helper override */
+.has-background-dark {
+  background-color: var(--color-black) !important;
 }
 
 /* Modal overrides */

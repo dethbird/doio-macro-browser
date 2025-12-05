@@ -39,7 +39,7 @@ const cellStyle: React.CSSProperties = {
 }
 
 const labelStyle: React.CSSProperties = {
-  fontSize: '10px',
+  fontSize: '16px',
   color: '#888',
   marginBottom: '4px',
 }
@@ -135,7 +135,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
         )}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
           {translation && (
-            <div className="has-text-light" style={{ fontSize: '12px' }}>
+            <div className="has-text-light" style={{ fontSize: '18px' }}>
               {translation.label}
             </div>
           )}
@@ -186,7 +186,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
           borderRadius: '4px'
         }}>
           {layerData.buttons.map((macro, idx) => (
-              <div key={idx} style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+              <div key={idx} style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
                 {renderMacroContent(macro)}
               </div>
             ))}
@@ -205,58 +205,58 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
           borderRadius: '4px'
         }}>
           {/* Header row */}
-          <div style={{ ...cellStyle, backgroundColor: '#1f1f1f', minHeight: '40px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#151515ff', minHeight: '40px' }}>
             <span className="has-text-grey-light" style={{ fontSize: '11px' }}></span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#1f1f1f', minHeight: '40px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#151515ff', minHeight: '40px' }}>
             <span className="has-text-grey-light" style={{ fontSize: '11px' }}>◀ Left</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#1f1f1f', minHeight: '40px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#151515ff', minHeight: '40px' }}>
             <span className="has-text-grey-light" style={{ fontSize: '11px' }}>Right ▶</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#1f1f1f', minHeight: '40px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#151515ff', minHeight: '40px' }}>
             <span className="has-text-grey-light" style={{ fontSize: '11px' }}>Press</span>
           </div>
           
           {/* Left Encoder */}
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff' }}>
             <span className="has-text-info" style={{ fontSize: '11px', fontWeight: 'bold' }}>Left</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.leftEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.leftEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.leftEncoderPress)}
           </div>
           
           {/* Right Encoder */}
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff' }}>
             <span className="has-text-info" style={{ fontSize: '11px', fontWeight: 'bold' }}>Right</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.rightEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.rightEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.rightEncoderPress)}
           </div>
           
           {/* Big Encoder */}
-          <div style={{ ...cellStyle, backgroundColor: '#363636' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff' }}>
             <span className="has-text-warning" style={{ fontSize: '11px', fontWeight: 'bold' }}>Big</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.bigEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.bigEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#363636', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
             {renderMacroContent(layerData.bigEncoderPress)}
           </div>
         </div>
