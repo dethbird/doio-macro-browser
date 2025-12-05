@@ -1,4 +1,5 @@
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useEffect, useState, useRef } from 'react'
+import gsap from 'gsap'
 import { humanize } from '../utils/humanize'
 import type { ViaProfile, Translation } from '../types'
 import '../theme.css'
@@ -30,6 +31,44 @@ interface LayerData {
 
 function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: MacroDisplayProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
+  const [displayedLayer, setDisplayedLayer] = useState(currentLayer)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const buttonsContainerRef = useRef<HTMLDivElement>(null)
+  const encodersContainerRef = useRef<HTMLDivElement>(null)
+
+  // Debounce layer changes - wait 350ms before updating display
+  useEffect(() => {
+    if (currentLayer !== displayedLayer) {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+      
+      debounceTimerRef.current = setTimeout(() => {
+        setDisplayedLayer(currentLayer)
+      }, 150)
+    }
+    
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [currentLayer, displayedLayer])
+
+  // Small bounce animation when displayedLayer changes
+  useEffect(() => {
+    const buttonCells = buttonsContainerRef.current?.querySelectorAll('.macro-cell')
+    const encoderCells = encodersContainerRef.current?.querySelectorAll('.macro-cell')
+    const allCells = [...(buttonCells || []), ...(encoderCells || [])]
+    
+    if (allCells.length > 0) {
+      // Quick scale down then bounce up
+      gsap.fromTo(allCells,
+        { scale: 0.9 },
+        { scale: 1, duration: 0.25, stagger: 0.015, ease: 'back.out(2)' }
+      )
+    }
+  }, [displayedLayer])
 
   // Fetch translations when profileId changes
   useEffect(() => {
@@ -59,11 +98,11 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
     return profileJson as ViaProfile
   }, [profileJson])
 
-  // Extract data for current layer
+  // Extract data for displayed layer (debounced)
   const layerData = useMemo((): LayerData | null => {
-    if (!parsedJson?.layers?.[currentLayer]) return null
+    if (!parsedJson?.layers?.[displayedLayer]) return null
     
-    const layer = parsedJson.layers[currentLayer]
+    const layer = parsedJson.layers[displayedLayer]
     const encoders = parsedJson.encoders
     
     return {
@@ -71,11 +110,11 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
       leftEncoderPress: layer[LEFT_ENCODER_PRESS_INDEX] || 'KC_NO',
       rightEncoderPress: layer[RIGHT_ENCODER_PRESS_INDEX] || 'KC_NO',
       bigEncoderPress: layer[BIG_ENCODER_PRESS_INDEX] || 'KC_NO',
-      leftEncoderTurn: encoders?.[0]?.[currentLayer] || ['KC_NO', 'KC_NO'],
-      rightEncoderTurn: encoders?.[1]?.[currentLayer] || ['KC_NO', 'KC_NO'],
-      bigEncoderTurn: encoders?.[2]?.[currentLayer] || ['KC_NO', 'KC_NO'],
+      leftEncoderTurn: encoders?.[0]?.[displayedLayer] || ['KC_NO', 'KC_NO'],
+      rightEncoderTurn: encoders?.[1]?.[displayedLayer] || ['KC_NO', 'KC_NO'],
+      bigEncoderTurn: encoders?.[2]?.[displayedLayer] || ['KC_NO', 'KC_NO'],
     }
-  }, [parsedJson, currentLayer])
+  }, [parsedJson, displayedLayer])
 
   // Create a lookup function for resolving translations
   const getTranslation = useMemo(() => {
@@ -161,7 +200,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
       {/* Buttons - 4x4 grid */}
       <div className="mb-5">
         <h4 className="title is-5 has-text-info mb-3">🎮 Buttons</h4>
-        <div className="grid-container" style={{ 
+        <div ref={buttonsContainerRef} className="grid-container" style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(4, 1fr)', 
           gap: '4px'
@@ -177,7 +216,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
       {/* Encoders - 3 rows x 4 columns (Name, Left Turn, Right Turn, Press) */}
       <div>
         <h4 className="title is-5 has-text-warning mb-3">🎛️ Encoders</h4>
-        <div className="grid-container" style={{ 
+        <div ref={encodersContainerRef} className="grid-container" style={{ 
           display: 'grid', 
           gridTemplateColumns: 'auto 1fr 1fr 1fr', 
           gap: '4px'
