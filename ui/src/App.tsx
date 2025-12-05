@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCog, faPen, faEye, faPlug } from '@fortawesome/free-solid-svg-icons'
 import ProfileSelector from './components/ProfileSelector'
@@ -153,7 +153,7 @@ function App() {
     return translation?.human_label || `Layer ${index + 1}`
   }
 
-  const handlePrevLayer = () => {
+  const handlePrevLayer = useCallback(() => {
     setCurrentLayer(prev => {
       const next = prev > 0 ? prev - 1 : layerCount - 1
       localStorage.setItem('currentLayer', String(next))
@@ -163,9 +163,9 @@ function App() {
       }
       return next
     })
-  }
+  }, [layerCount, isConnected, sendLayerSwitch])
 
-  const handleNextLayer = () => {
+  const handleNextLayer = useCallback(() => {
     setCurrentLayer(prev => {
       const next = prev < layerCount - 1 ? prev + 1 : 0
       localStorage.setItem('currentLayer', String(next))
@@ -175,7 +175,7 @@ function App() {
       }
       return next
     })
-  }
+  }, [layerCount, isConnected, sendLayerSwitch])
 
   // Keyboard navigation for layers
   useEffect(() => {
@@ -196,7 +196,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [layerCount])
+  }, [handlePrevLayer, handleNextLayer])
 
   // Touch swipe navigation for layers
   const touchStartX = useRef<number | null>(null)
