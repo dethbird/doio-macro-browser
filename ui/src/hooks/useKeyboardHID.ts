@@ -41,7 +41,6 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void): UseKeyb
   const sendLayerSwitch = useCallback(async (layer: number) => {
     const device = deviceRef.current
     if (!device || !device.opened) {
-      console.warn('Cannot send layer switch: device not connected')
       return
     }
 
@@ -51,7 +50,6 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void): UseKeyb
       data[1] = layer
       
       await device.sendReport(0, data)
-      console.log('Sent layer switch command:', layer)
     } catch (err) {
       console.error('Failed to send layer switch:', err)
     }
@@ -64,14 +62,9 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void): UseKeyb
     // Custom firmware message: layer broadcast
     if (data[0] === MSG_LAYER_BROADCAST) {
       const layer = data[1]
-      console.log('Layer broadcast received:', layer)
       setCurrentLayer(layer)
       onLayerChangeRef.current?.(layer)
-      return
     }
-    
-    // Debug: log other reports (can remove later)
-    // console.log('HID Report received:', Array.from(data.slice(0, 10)))
   }, [])
 
   const connect = useCallback(async () => {
@@ -138,8 +131,10 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void): UseKeyb
     const tryReconnect = async () => {
       try {
         const devices = await navigator.hid.getDevices()
+        
+        // Find the Raw HID interface (usage page 0xFF60 for VIA)
         const doioDevice = devices.find(d => 
-          d.vendorId === DOIO_VENDOR_ID || 
+          (d.vendorId === DOIO_VENDOR_ID || d.productName?.includes('KB16')) &&
           d.collections?.some(c => c.usagePage === VIA_USAGE_PAGE)
         )
 
@@ -152,12 +147,10 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void): UseKeyb
           doioDevice.addEventListener('inputreport', handleInputReport)
           setIsConnected(true)
 
-          console.log('Reconnected to keyboard:', doioDevice.productName)
-        } else {
-          console.log('No previously paired device found')
+          console.log('Connected to keyboard:', doioDevice.productName)
         }
       } catch (err) {
-        console.log('Failed to reconnect:', err)
+        // Silent fail on auto-reconnect
       }
     }
 
