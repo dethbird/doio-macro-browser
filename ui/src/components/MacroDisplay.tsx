@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useState } from 'react'
 import { humanize } from '../utils/humanize'
 import type { ViaProfile, Translation } from '../types'
+import '../theme.css'
 
 interface MacroDisplayProps {
   profileJson: unknown
@@ -25,23 +26,6 @@ interface LayerData {
   leftEncoderTurn: string[]
   rightEncoderTurn: string[]
   bigEncoderTurn: string[]
-}
-
-// Styles for grid cells
-const cellStyle: React.CSSProperties = {
-  padding: '8px',
-  textAlign: 'center',
-  border: '1px solid #4a4a4a',
-  minHeight: '60px',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: '16px',
-  color: '#888',
-  marginBottom: '4px',
 }
 
 function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: MacroDisplayProps) {
@@ -130,16 +114,16 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
           <img 
             src={translation.icon} 
             alt="" 
-            style={{ maxHeight: '100px', maxWidth: '60px', objectFit: 'contain' }}
+            className="macro-icon"
           />
         )}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
           {translation && (
-            <div className="has-text-light" style={{ fontSize: '18px' }}>
+            <div className="has-text-light macro-content">
               {translation.label}
             </div>
           )}
-          <div style={labelStyle}>
+          <div className="macro-label">
             {humanized || '—'}
           </div>
         </div>
@@ -166,7 +150,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
   return (
     <div className="box has-background-dark">
       <div className="is-flex is-justify-content-space-between is-align-items-start mb-4">
-        <h3 className="title is-5 has-text-light mb-0">
+        <h3 className="title is-4 has-text-light mb-0">
           {layerName}
         </h3>
         <span className="has-text-grey-light" style={{ fontSize: '12px' }}>
@@ -176,17 +160,14 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
       
       {/* Buttons - 4x4 grid */}
       <div className="mb-5">
-        <h4 className="title is-6 has-text-info mb-3">🎮 Buttons</h4>
-        <div style={{ 
+        <h4 className="title is-5 has-text-info mb-3">🎮 Buttons</h4>
+        <div className="grid-container" style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(4, 1fr)', 
-          gap: '4px',
-          backgroundColor: '#2b2b2b',
-          padding: '8px',
-          borderRadius: '4px'
+          gap: '4px'
         }}>
           {layerData.buttons.map((macro, idx) => (
-              <div key={idx} style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+              <div key={idx} className="macro-cell">
                 {renderMacroContent(macro)}
               </div>
             ))}
@@ -195,68 +176,63 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
       
       {/* Encoders - 3 rows x 4 columns (Name, Left Turn, Right Turn, Press) */}
       <div>
-        <h4 className="title is-6 has-text-warning mb-3">🎛️ Encoders</h4>
-        <div style={{ 
+        <h4 className="title is-5 has-text-warning mb-3">🎛️ Encoders</h4>
+        <div className="grid-container" style={{ 
           display: 'grid', 
           gridTemplateColumns: 'auto 1fr 1fr 1fr', 
-          gap: '4px',
-          backgroundColor: '#2b2b2b',
-          padding: '8px',
-          borderRadius: '4px'
+          gap: '4px'
         }}>
           {/* Header row */}
-          <div style={{ ...cellStyle, backgroundColor: '#151515ff', minHeight: '40px' }}>
-            <span className="has-text-grey-light" style={{ fontSize: '11px' }}></span>
+          <div></div>
+          <div className="macro-cell-header">
+            <span className="has-text-grey-light" style={{ fontSize: '14px' }}>◀ Left</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#151515ff', minHeight: '40px' }}>
-            <span className="has-text-grey-light" style={{ fontSize: '11px' }}>◀ Left</span>
+          <div className="macro-cell-header">
+            <span className="has-text-grey-light" style={{ fontSize: '14px' }}>Right ▶</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#151515ff', minHeight: '40px' }}>
-            <span className="has-text-grey-light" style={{ fontSize: '11px' }}>Right ▶</span>
-          </div>
-          <div style={{ ...cellStyle, backgroundColor: '#151515ff', minHeight: '40px' }}>
-            <span className="has-text-grey-light" style={{ fontSize: '11px' }}>Press</span>
+          <div className="macro-cell-header">
+            <span className="has-text-grey-light" style={{ fontSize: '14px' }}>Press</span>
           </div>
           
           {/* Left Encoder */}
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff' }}>
-            <span className="has-text-info" style={{ fontSize: '11px', fontWeight: 'bold' }}>Left</span>
+          <div className="macro-cell-knob">
+            <span className="has-text-info" style={{ fontSize: '14px', fontWeight: 'bold' }}>Left</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.leftEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.leftEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.leftEncoderPress)}
           </div>
           
           {/* Right Encoder */}
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff' }}>
-            <span className="has-text-info" style={{ fontSize: '11px', fontWeight: 'bold' }}>Right</span>
+          <div className="macro-cell-knob">
+            <span className="has-text-info" style={{ fontSize: '14px', fontWeight: 'bold' }}>Right</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.rightEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.rightEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.rightEncoderPress)}
           </div>
           
           {/* Big Encoder */}
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff' }}>
-            <span className="has-text-warning" style={{ fontSize: '11px', fontWeight: 'bold' }}>Big</span>
+          <div className="macro-cell-knob">
+            <span className="has-text-warning" style={{ fontSize: '14px', fontWeight: 'bold' }}>Big</span>
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.bigEncoderTurn[0])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.bigEncoderTurn[1])}
           </div>
-          <div style={{ ...cellStyle, backgroundColor: '#212121ff', flexDirection: 'row', gap: '8px' }}>
+          <div className="macro-cell">
             {renderMacroContent(layerData.bigEncoderPress)}
           </div>
         </div>
