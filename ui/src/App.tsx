@@ -36,6 +36,7 @@ function App() {
     return saved === null ? true : saved === 'true'
   })
   const [pressedKey, setPressedKey] = useState<{ row: number; col: number } | null>(null)
+  const [encoderEvent, setEncoderEvent] = useState<{ index: number; direction: 'cw' | 'ccw' } | null>(null)
 
   // WebHID keyboard connection for layer sync
   const { isConnected, isSupported, connect, disconnect, error: hidError, sendLayerSwitch } = useKeyboardHID(
@@ -49,6 +50,10 @@ function App() {
       } else {
         setPressedKey(null)
       }
+    },
+    (ev) => {
+      setEncoderEvent(ev)
+      setTimeout(() => setEncoderEvent(null), 250)
     }
   )
 
@@ -397,6 +402,7 @@ function App() {
             currentLayer={currentLayer}
             profileId={selectedProfile?.id ?? null}
             pressedKey={pressedKey}
+            encoderEvent={encoderEvent}
           />
         )}
       </div>

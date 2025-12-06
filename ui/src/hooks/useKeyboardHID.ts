@@ -13,6 +13,8 @@ const MSG_LAYER_BROADCAST = 0xAA  // Keyboard -> UI: layer changed
 const MSG_LAYER_SWITCH = 0xBB     // UI -> Keyboard: switch to layer
 const MSG_KEYPRESS = 0xCC         // Keyboard -> UI: key pressed
 const MSG_KEYRELEASE = 0xCD       // Keyboard -> UI: key released
+const MSG_ENCODER_CW = 0xCE       // Keyboard -> UI: encoder clockwise
+const MSG_ENCODER_CCW = 0xCF      // Keyboard -> UI: encoder counter-clockwise
 
 interface KeypressEvent {
   row: number
@@ -31,13 +33,24 @@ interface UseKeyboardHIDReturn {
   sendLayerSwitch: (layer: number) => Promise<void>
 }
 
-export function useKeyboardHID(onLayerChange?: (layer: number) => void, onKeypress?: (event: KeypressEvent) => void): UseKeyboardHIDReturn {
+interface EncoderEvent {
+  index: number
+  direction: 'cw' | 'ccw'
+  layer?: number
+}
+
+export function useKeyboardHID(
+  onLayerChange?: (layer: number) => void,
+  onKeypress?: (event: KeypressEvent) => void,
+  onEncoder?: (ev: EncoderEvent) => void
+): UseKeyboardHIDReturn {
   const [isConnected, setIsConnected] = useState(false)
   const [currentLayer, setCurrentLayer] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const deviceRef = useRef<HIDDevice | null>(null)
   const onLayerChangeRef = useRef(onLayerChange)
   const onKeypressRef = useRef(onKeypress)
+  const onEncoderRef = useRef(onEncoder)
   const hasInitializedRef = useRef(false)
 
   // Keep the callback refs up to date
@@ -48,6 +61,10 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void, onKeypre
   useEffect(() => {
     onKeypressRef.current = onKeypress
   }, [onKeypress])
+
+  useEffect(() => {
+    onEncoderRef.current = onEncoder
+  }, [onEncoder])
 
   const isSupported = typeof navigator !== 'undefined' && 'hid' in navigator
 
@@ -85,8 +102,25 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void, onKeypre
       const row = data[1]
       const col = data[2]
       const keycode = (data[3] << 8) | data[4]
-      console.log(`[HID] Key DOWN: row=${row}, col=${col}, keycode=0x${keycode.toString(16)}`)
-      onKeypressRef.current?.({ row, col, keycode, pressed: true })
+      
+      // Some firmwares use synthetic rows for encoder turns — map those to encoder events
+      if (row >= 252) {
+        // Some firmwares emit the same synthetic rows but use the column to disambiguate encoder index.
+        // Prefer using `col` when it maps to a valid encoder (0=left,1=right,2=big).
+        let encoderIndex: number
+        if (col >= 0 && col <= 2) {
+          encoderIndex = col
+        } else {
+          // Fallback to row-based grouping: 252/253 -> 0, 254/255 -> 1, 256/257 -> 2
+          encoderIndex = Math.floor((row - 252) / 2)
+        }
+        // Use parity of row to determine direction: even -> ccw, odd -> cw
+        const direction: 'ccw' | 'cw' = (row % 2 === 0) ? 'ccw' : 'cw'
+        
+        onEncoderRef.current?.({ index: encoderIndex, direction, layer: currentLayer ?? undefined })
+      } else {
+        onKeypressRef.current?.({ row, col, keycode, pressed: true })
+      }
     }
     
     // Custom firmware message: key release broadcast
@@ -94,8 +128,17 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void, onKeypre
       const row = data[1]
       const col = data[2]
       const keycode = (data[3] << 8) | data[4]
-      console.log(`[HID] Key UP: row=${row}, col=${col}, keycode=0x${keycode.toString(16)}`)
+      
       onKeypressRef.current?.({ row, col, keycode, pressed: false })
+    }
+
+    // Explicit encoder message (preferred): encoder index in data[1], layer in data[2]
+    if (data[0] === MSG_ENCODER_CW || data[0] === MSG_ENCODER_CCW) {
+      const encoderIndex = data[1]
+      const layer = data[2]
+      const direction = data[0] === MSG_ENCODER_CW ? 'cw' : 'ccw'
+      
+      onEncoderRef.current?.({ index: encoderIndex, direction, layer })
     }
   }, [])
 

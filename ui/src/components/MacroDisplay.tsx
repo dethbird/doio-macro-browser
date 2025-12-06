@@ -9,6 +9,7 @@ interface MacroDisplayProps {
   currentLayer: number
   profileId: number | null
   pressedKey: { row: number; col: number } | null
+  encoderEvent: { index: number; direction: 'cw' | 'ccw' } | null
 }
 
 // Layer index mapping for DOIO KB16
@@ -44,12 +45,17 @@ interface LayerData {
   bigEncoderTurn: string[]
 }
 
-function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey }: MacroDisplayProps) {
+function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encoderEvent }: MacroDisplayProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
   const [displayedLayer, setDisplayedLayer] = useState(currentLayer)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const buttonsContainerRef = useRef<HTMLDivElement>(null)
   const encodersContainerRef = useRef<HTMLDivElement>(null)
+  const encoderCellRefs = useRef<Array<Array<HTMLDivElement | null>>>([
+    [null, null, null], // left encoder
+    [null, null, null], // right encoder
+    [null, null, null]  // big encoder
+  ])
   
   // Calculate which button index is currently pressed
   const pressedButtonIndex = pressedKey ? rowColToButtonIndex(pressedKey.row, pressedKey.col) : null
@@ -188,6 +194,38 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey }: Macr
     )
   }
 
+  // Animate encoder rotation events (left/right) with explicit mapping
+  useEffect(() => {
+    if (!encoderEvent) return
+    const row = encoderEvent.index // 0=left, 1=right, 2=big
+    const col = encoderEvent.direction === 'ccw' ? 0 : 1 // 0=CCW, 1=CW
+    const target = encoderCellRefs.current?.[row]?.[col]
+    
+    if (target) {
+      gsap.fromTo(target,
+        { scale: 0.92 },
+        { scale: 1, backgroundColor: '#ffd166', duration: 0.18, yoyo: true, repeat: 1, ease: 'power1.inOut' }
+      )
+    }
+  }, [encoderEvent])
+
+  // Animate encoder press when pressedKey corresponds to encoder press column (col === 4)
+  useEffect(() => {
+    if (!pressedKey) return
+    if (pressedKey.col !== 4) return
+    const row = pressedKey.row // 0=left, 1=right, 2=big
+    if (row < 0 || row > 2) return
+    const col = 2 // Press column
+    const target = encoderCellRefs.current?.[row]?.[col]
+    
+    if (target) {
+      gsap.fromTo(target,
+        { scale: 1 },
+        { scale: 0.94, backgroundColor: '#ff6b6b', duration: 0.08, yoyo: true, repeat: 1, ease: 'power1.inOut' }
+      )
+    }
+  }, [pressedKey])
+
   if (!profileJson) {
     return (
       <div className="box has-background-dark">
@@ -250,47 +288,27 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey }: Macr
             <span className="has-text-grey-light" style={{ fontSize: '14px' }}>Press</span>
           </div>
           
-          {/* Left Encoder */}
+          {/* Left Encoder (row 0) */}
           <div className="macro-cell-knob">
             <span className="has-text-info" style={{ fontSize: '14px', fontWeight: 'bold' }}>Left</span>
           </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.leftEncoderTurn[0])}
-          </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.leftEncoderTurn[1])}
-          </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.leftEncoderPress)}
-          </div>
-          
-          {/* Right Encoder */}
+          <div className="macro-cell" data-enc-row={0} data-enc-col={0} ref={el => { encoderCellRefs.current[0][0] = el }}>{renderMacroContent(layerData.leftEncoderTurn[0])}</div>
+          <div className="macro-cell" data-enc-row={0} data-enc-col={1} ref={el => { encoderCellRefs.current[0][1] = el }}>{renderMacroContent(layerData.leftEncoderTurn[1])}</div>
+          <div className="macro-cell" data-enc-row={0} data-enc-col={2} ref={el => { encoderCellRefs.current[0][2] = el }}>{renderMacroContent(layerData.leftEncoderPress)}</div>
+          {/* Right Encoder (row 1) */}
           <div className="macro-cell-knob">
             <span className="has-text-info" style={{ fontSize: '14px', fontWeight: 'bold' }}>Right</span>
           </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.rightEncoderTurn[0])}
-          </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.rightEncoderTurn[1])}
-          </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.rightEncoderPress)}
-          </div>
-          
-          {/* Big Encoder */}
+          <div className="macro-cell" data-enc-row={1} data-enc-col={0} ref={el => { encoderCellRefs.current[1][0] = el }}>{renderMacroContent(layerData.rightEncoderTurn[0])}</div>
+          <div className="macro-cell" data-enc-row={1} data-enc-col={1} ref={el => { encoderCellRefs.current[1][1] = el }}>{renderMacroContent(layerData.rightEncoderTurn[1])}</div>
+          <div className="macro-cell" data-enc-row={1} data-enc-col={2} ref={el => { encoderCellRefs.current[1][2] = el }}>{renderMacroContent(layerData.rightEncoderPress)}</div>
+          {/* Big Encoder (row 2) */}
           <div className="macro-cell-knob">
             <span className="has-text-warning" style={{ fontSize: '14px', fontWeight: 'bold' }}>Big</span>
           </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.bigEncoderTurn[0])}
-          </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.bigEncoderTurn[1])}
-          </div>
-          <div className="macro-cell">
-            {renderMacroContent(layerData.bigEncoderPress)}
-          </div>
+          <div className="macro-cell" data-enc-row={2} data-enc-col={0} ref={el => { encoderCellRefs.current[2][0] = el }}>{renderMacroContent(layerData.bigEncoderTurn[0])}</div>
+          <div className="macro-cell" data-enc-row={2} data-enc-col={1} ref={el => { encoderCellRefs.current[2][1] = el }}>{renderMacroContent(layerData.bigEncoderTurn[1])}</div>
+          <div className="macro-cell" data-enc-row={2} data-enc-col={2} ref={el => { encoderCellRefs.current[2][2] = el }}>{renderMacroContent(layerData.bigEncoderPress)}</div>
         </div>
       </div>
     </div>
