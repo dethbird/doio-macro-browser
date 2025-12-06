@@ -160,7 +160,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
     width: '10px',
     height: '10px',
     borderRadius: '50%',
-    background: on ? '#ff6b6b' : '#2f2f2f',
+    background: on ? '#ff6b6b' : '#2e1a1aff',
     boxShadow: on ? '0 0 6px rgba(255,107,107,0.9)' : undefined,
     position: 'absolute' as const,
     top: '6px',
