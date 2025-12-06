@@ -187,6 +187,65 @@ html, body, #root {
   border-radius: 4px;
 }
 
+/* Grid variants used by MacroDisplay */
+.grid-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.grid-encoders {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+/* LED indicator in top-left of cells */
+.led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+.led.off {
+  background: #3a0f0f;
+}
+.led.on {
+  background: #ff6b6b;
+  box-shadow: 0 0 6px rgba(255,107,107,0.9);
+}
+
+/* Helper to mark cells that contain an LED */
+.macro-cell--has-led {
+  position: relative;
+  padding-top: 6px;
+}
+
+/* Encoder cells need relative positioning for their LED */
+.macro-cell--encoder {
+  position: relative;
+}
+
+/* Pressed state: reduce drop shadow to look pressed */
+.is-pressed {
+  background-color: #ff6b6b !important;
+  transform: scale(0.95) !important;
+  transition: all 0.12s ease !important;
+  box-shadow: -1px 1px 3px rgba(0,0,0,0.45), -0.5px 0.5px 2px rgba(0,0,0,0.35), inset 0.5px 0.5px 1px rgba(255,255,255,0.03) !important;
+}
+
+/* Shorter transition for encoder press cells */
+.encoder-press.is-pressed {
+  transition: all 0.08s ease !important;
+}
+
+/* Small label for encoder headers */
+.encoder-label { font-size: 14px; }
+
 /* 3D Button Cell - main styling */
 .macro-cell {
   padding: 12px 8px;

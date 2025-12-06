@@ -1,5 +1,4 @@
 import { useMemo, useEffect, useState, useRef } from 'react'
-import type { CSSProperties } from 'react'
 import gsap from 'gsap'
 import { humanize } from '../utils/humanize'
 import type { ViaProfile, Translation } from '../types'
@@ -155,18 +154,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
     return !!(pressedKey && pressedKey.col >= 4 && pressedKey.row === encRow)
   }
 
-  // LED style factory for cells
-  const ledStyle = (on: boolean) => ({
-    width: '10px',
-    height: '10px',
-    borderRadius: '50%',
-    background: on ? '#ff6b6b' : '#2e1a1aff',
-    boxShadow: on ? '0 0 6px rgba(255,107,107,0.9)' : undefined,
-    position: 'absolute' as const,
-    top: '6px',
-    left: '6px',
-    zIndex: 2,
-  })
+  
 
   // Extract data for displayed layer (debounced)
   const layerData = useMemo((): LayerData | null => {
@@ -319,22 +307,15 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
       {/* Buttons - 4x4 grid */}
       <div className="mb-5">
         <h4 className="title is-5 has-text-info mb-3">🎮 Buttons</h4>
-        <div ref={buttonsContainerRef} className="grid-container" style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(4, 1fr)', 
-          gap: '4px'
-        }}>
+        <div ref={buttonsContainerRef} className="grid-container grid-buttons">
           {layerData.buttons.map((macro, idx) => {
             const isOn = pressedButtonIndex === idx
-            const baseCellStyle: CSSProperties = { position: 'relative', paddingTop: '6px' }
-            const pressedStyle: CSSProperties = isOn ? { backgroundColor: '#ff6b6b', transform: 'scale(0.95)', transition: 'all 0.1s ease' } : {}
             return (
               <div
                 key={idx}
-                className="macro-cell"
-                style={{ ...baseCellStyle, ...pressedStyle }}
+                className={"macro-cell macro-cell--has-led" + (isOn ? ' is-pressed' : '')}
               >
-                <div style={ledStyle(isOn)} />
+                <div className={"led " + (isOn ? 'on' : 'off')} />
                 {renderMacroContent(macro)}
               </div>
             )
@@ -345,11 +326,7 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
       {/* Encoders - 3 rows x 4 columns (Name, Left Turn, Right Turn, Press) */}
       <div>
         <h4 className="title is-5 has-text-warning mb-3">🎛️ Encoders</h4>
-        <div ref={encodersContainerRef} className="grid-container" style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'auto 1fr 1fr 1fr', 
-          gap: '4px'
-        }}>
+        <div ref={encodersContainerRef} className="grid-container grid-encoders">
           {/* Header row */}
           <div></div>
           <div className="macro-cell-header">
@@ -364,50 +341,50 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
           
           {/* Left Encoder (row 0) */}
           <div className="macro-cell-knob">
-            <span className="has-text-info" style={{ fontSize: '14px', fontWeight: 'bold' }}>Left</span>
+            <span className="has-text-info encoder-label" style={{ fontWeight: 'bold' }}>Left</span>
           </div>
-          <div className="macro-cell" data-enc-row={0} data-enc-col={0} ref={el => { encoderCellRefs.current[0][0] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(encoderLed[0][0])} />
+          <div className="macro-cell macro-cell--encoder" data-enc-row={0} data-enc-col={0} ref={el => { encoderCellRefs.current[0][0] = el }}>
+            <div className={"led " + (encoderLed[0][0] ? 'on' : 'off')} />
             {renderMacroContent(layerData.leftEncoderTurn[0])}
           </div>
-          <div className="macro-cell" data-enc-row={0} data-enc-col={1} ref={el => { encoderCellRefs.current[0][1] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(encoderLed[0][1])} />
+          <div className="macro-cell macro-cell--encoder" data-enc-row={0} data-enc-col={1} ref={el => { encoderCellRefs.current[0][1] = el }}>
+            <div className={"led " + (encoderLed[0][1] ? 'on' : 'off')} />
             {renderMacroContent(layerData.leftEncoderTurn[1])}
           </div>
-          <div className="macro-cell" data-enc-row={0} data-enc-col={2} ref={el => { encoderCellRefs.current[0][2] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(isEncoderPressed(0))} />
+          <div className={"macro-cell macro-cell--encoder encoder-press" + (isEncoderPressed(0) ? ' is-pressed' : '')} data-enc-row={0} data-enc-col={2} ref={el => { encoderCellRefs.current[0][2] = el }}>
+            <div className={"led " + (isEncoderPressed(0) ? 'on' : 'off')} />
             {renderMacroContent(layerData.leftEncoderPress)}
           </div>
           {/* Right Encoder (row 1) */}
           <div className="macro-cell-knob">
-            <span className="has-text-info" style={{ fontSize: '14px', fontWeight: 'bold' }}>Right</span>
+            <span className="has-text-info encoder-label" style={{ fontWeight: 'bold' }}>Right</span>
           </div>
-          <div className="macro-cell" data-enc-row={1} data-enc-col={0} ref={el => { encoderCellRefs.current[1][0] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(encoderLed[1][0])} />
+          <div className="macro-cell macro-cell--encoder" data-enc-row={1} data-enc-col={0} ref={el => { encoderCellRefs.current[1][0] = el }}>
+            <div className={"led " + (encoderLed[1][0] ? 'on' : 'off')} />
             {renderMacroContent(layerData.rightEncoderTurn[0])}
           </div>
-          <div className="macro-cell" data-enc-row={1} data-enc-col={1} ref={el => { encoderCellRefs.current[1][1] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(encoderLed[1][1])} />
+          <div className="macro-cell macro-cell--encoder" data-enc-row={1} data-enc-col={1} ref={el => { encoderCellRefs.current[1][1] = el }}>
+            <div className={"led " + (encoderLed[1][1] ? 'on' : 'off')} />
             {renderMacroContent(layerData.rightEncoderTurn[1])}
           </div>
-          <div className="macro-cell" data-enc-row={1} data-enc-col={2} ref={el => { encoderCellRefs.current[1][2] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(isEncoderPressed(1))} />
+          <div className={"macro-cell macro-cell--encoder encoder-press" + (isEncoderPressed(1) ? ' is-pressed' : '')} data-enc-row={1} data-enc-col={2} ref={el => { encoderCellRefs.current[1][2] = el }}>
+            <div className={"led " + (isEncoderPressed(1) ? 'on' : 'off')} />
             {renderMacroContent(layerData.rightEncoderPress)}
           </div>
           {/* Big Encoder (row 2) */}
           <div className="macro-cell-knob">
-            <span className="has-text-warning" style={{ fontSize: '14px', fontWeight: 'bold' }}>Big</span>
+            <span className="has-text-warning encoder-label" style={{ fontWeight: 'bold' }}>Big</span>
           </div>
-          <div className="macro-cell" data-enc-row={2} data-enc-col={0} ref={el => { encoderCellRefs.current[2][0] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(encoderLed[2][0])} />
+          <div className="macro-cell macro-cell--encoder" data-enc-row={2} data-enc-col={0} ref={el => { encoderCellRefs.current[2][0] = el }}>
+            <div className={"led " + (encoderLed[2][0] ? 'on' : 'off')} />
             {renderMacroContent(layerData.bigEncoderTurn[0])}
           </div>
-          <div className="macro-cell" data-enc-row={2} data-enc-col={1} ref={el => { encoderCellRefs.current[2][1] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(encoderLed[2][1])} />
+          <div className="macro-cell macro-cell--encoder" data-enc-row={2} data-enc-col={1} ref={el => { encoderCellRefs.current[2][1] = el }}>
+            <div className={"led " + (encoderLed[2][1] ? 'on' : 'off')} />
             {renderMacroContent(layerData.bigEncoderTurn[1])}
           </div>
-          <div className="macro-cell" data-enc-row={2} data-enc-col={2} ref={el => { encoderCellRefs.current[2][2] = el }} style={{ position: 'relative' }}>
-            <div style={ledStyle(isEncoderPressed(2))} />
+          <div className={"macro-cell macro-cell--encoder encoder-press" + (isEncoderPressed(2) ? ' is-pressed' : '')} data-enc-row={2} data-enc-col={2} ref={el => { encoderCellRefs.current[2][2] = el }}>
+            <div className={"led " + (isEncoderPressed(2) ? 'on' : 'off')} />
             {renderMacroContent(layerData.bigEncoderPress)}
           </div>
         </div>
