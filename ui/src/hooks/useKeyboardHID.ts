@@ -11,6 +11,15 @@ const VIA_USAGE = 0x61
 // Custom Raw HID message IDs (must match firmware)
 const MSG_LAYER_BROADCAST = 0xAA  // Keyboard -> UI: layer changed
 const MSG_LAYER_SWITCH = 0xBB     // UI -> Keyboard: switch to layer
+const MSG_KEYPRESS = 0xCC         // Keyboard -> UI: key pressed
+const MSG_KEYRELEASE = 0xCD       // Keyboard -> UI: key released
+
+interface KeypressEvent {
+  row: number
+  col: number
+  keycode: number
+  pressed: boolean
+}
 
 interface UseKeyboardHIDReturn {
   isConnected: boolean
@@ -22,18 +31,23 @@ interface UseKeyboardHIDReturn {
   sendLayerSwitch: (layer: number) => Promise<void>
 }
 
-export function useKeyboardHID(onLayerChange?: (layer: number) => void): UseKeyboardHIDReturn {
+export function useKeyboardHID(onLayerChange?: (layer: number) => void, onKeypress?: (event: KeypressEvent) => void): UseKeyboardHIDReturn {
   const [isConnected, setIsConnected] = useState(false)
   const [currentLayer, setCurrentLayer] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const deviceRef = useRef<HIDDevice | null>(null)
   const onLayerChangeRef = useRef(onLayerChange)
+  const onKeypressRef = useRef(onKeypress)
   const hasInitializedRef = useRef(false)
 
-  // Keep the callback ref up to date
+  // Keep the callback refs up to date
   useEffect(() => {
     onLayerChangeRef.current = onLayerChange
   }, [onLayerChange])
+
+  useEffect(() => {
+    onKeypressRef.current = onKeypress
+  }, [onKeypress])
 
   const isSupported = typeof navigator !== 'undefined' && 'hid' in navigator
 
@@ -64,6 +78,24 @@ export function useKeyboardHID(onLayerChange?: (layer: number) => void): UseKeyb
       const layer = data[1]
       setCurrentLayer(layer)
       onLayerChangeRef.current?.(layer)
+    }
+    
+    // Custom firmware message: keypress broadcast
+    if (data[0] === MSG_KEYPRESS) {
+      const row = data[1]
+      const col = data[2]
+      const keycode = (data[3] << 8) | data[4]
+      console.log(`[HID] Key DOWN: row=${row}, col=${col}, keycode=0x${keycode.toString(16)}`)
+      onKeypressRef.current?.({ row, col, keycode, pressed: true })
+    }
+    
+    // Custom firmware message: key release broadcast
+    if (data[0] === MSG_KEYRELEASE) {
+      const row = data[1]
+      const col = data[2]
+      const keycode = (data[3] << 8) | data[4]
+      console.log(`[HID] Key UP: row=${row}, col=${col}, keycode=0x${keycode.toString(16)}`)
+      onKeypressRef.current?.({ row, col, keycode, pressed: false })
     }
   }, [])
 
