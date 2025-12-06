@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useState, useRef } from 'react'
+import type { CSSProperties } from 'react'
 import gsap from 'gsap'
 import { humanize } from '../utils/humanize'
 import type { ViaProfile, Translation } from '../types'
@@ -56,6 +57,33 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
     [null, null, null], // right encoder
     [null, null, null]  // big encoder
   ])
+  // Track transient LED state for encoder turn/press cells: 3 rows x 3 cols
+  const [encoderLed, setEncoderLed] = useState<boolean[][]>([
+    [false, false, false],
+    [false, false, false],
+    [false, false, false]
+  ])
+  const encoderLedTimersRef = useRef<Array<Array<ReturnType<typeof setTimeout> | null>>>([
+    [null, null, null],
+    [null, null, null],
+    [null, null, null]
+  ])
+
+  // Clear any pending timers on unmount
+  useEffect(() => {
+    return () => {
+      const timers = encoderLedTimersRef.current
+      for (let r = 0; r < timers.length; r++) {
+        for (let c = 0; c < timers[r].length; c++) {
+          const t = timers[r][c]
+          if (t) {
+            clearTimeout(t)
+            timers[r][c] = null
+          }
+        }
+      }
+    }
+  }, [])
   
   // Calculate which button index is currently pressed
   const pressedButtonIndex = pressedKey ? rowColToButtonIndex(pressedKey.row, pressedKey.col) : null
@@ -121,6 +149,24 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
     }
     return profileJson as ViaProfile
   }, [profileJson])
+
+  // Helper to determine whether an encoder press is active
+  const isEncoderPressed = (encRow: number) => {
+    return !!(pressedKey && pressedKey.col >= 4 && pressedKey.row === encRow)
+  }
+
+  // LED style factory for cells
+  const ledStyle = (on: boolean) => ({
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%',
+    background: on ? '#ff6b6b' : '#2f2f2f',
+    boxShadow: on ? '0 0 6px rgba(255,107,107,0.9)' : undefined,
+    position: 'absolute' as const,
+    top: '6px',
+    left: '6px',
+    zIndex: 2,
+  })
 
   // Extract data for displayed layer (debounced)
   const layerData = useMemo((): LayerData | null => {
@@ -200,19 +246,45 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
     const row = encoderEvent.index // 0=left, 1=right, 2=big
     const col = encoderEvent.direction === 'ccw' ? 0 : 1 // 0=CCW, 1=CW
     const target = encoderCellRefs.current?.[row]?.[col]
-    
+
+    // Animate the cell (existing behavior)
     if (target) {
       gsap.fromTo(target,
         { scale: 0.92 },
         { scale: 1, backgroundColor: '#ffd166', duration: 0.18, yoyo: true, repeat: 1, ease: 'power1.inOut' }
       )
     }
+
+    // Light the corresponding encoder LED for the duration of the animation
+    // Clear any existing timer for that cell
+    const timers = encoderLedTimersRef.current
+    if (timers?.[row]?.[col]) {
+      clearTimeout(timers[row][col] as ReturnType<typeof setTimeout>)
+      timers[row][col] = null
+    }
+
+    setEncoderLed(prev => {
+      const copy = prev.map(r => r.slice())
+      copy[row][col] = true
+      return copy
+    })
+
+    // Turn off after ~180ms to match GSAP animation
+    timers[row][col] = setTimeout(() => {
+      setEncoderLed(prev => {
+        const copy = prev.map(r => r.slice())
+        copy[row][col] = false
+        return copy
+      })
+      timers[row][col] = null
+    }, 180)
   }, [encoderEvent])
 
   // Animate encoder press when pressedKey corresponds to encoder press column (col === 4)
   useEffect(() => {
     if (!pressedKey) return
-    if (pressedKey.col !== 4) return
+    // Treat any column >= 4 as encoder-press column (robust against firmware variations)
+    if (pressedKey.col < 4) return
     const row = pressedKey.row // 0=left, 1=right, 2=big
     if (row < 0 || row > 2) return
     const col = 2 // Press column
@@ -252,19 +324,21 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
           gridTemplateColumns: 'repeat(4, 1fr)', 
           gap: '4px'
         }}>
-          {layerData.buttons.map((macro, idx) => (
-              <div 
-                key={idx} 
+          {layerData.buttons.map((macro, idx) => {
+            const isOn = pressedButtonIndex === idx
+            const baseCellStyle: CSSProperties = { position: 'relative', paddingTop: '6px' }
+            const pressedStyle: CSSProperties = isOn ? { backgroundColor: '#ff6b6b', transform: 'scale(0.95)', transition: 'all 0.1s ease' } : {}
+            return (
+              <div
+                key={idx}
                 className="macro-cell"
-                style={pressedButtonIndex === idx ? { 
-                  backgroundColor: '#ff6b6b',
-                  transform: 'scale(0.95)',
-                  transition: 'all 0.1s ease'
-                } : undefined}
+                style={{ ...baseCellStyle, ...pressedStyle }}
               >
+                <div style={ledStyle(isOn)} />
                 {renderMacroContent(macro)}
               </div>
-            ))}
+            )
+          })}
         </div>
       </div>
       
@@ -292,23 +366,50 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
           <div className="macro-cell-knob">
             <span className="has-text-info" style={{ fontSize: '14px', fontWeight: 'bold' }}>Left</span>
           </div>
-          <div className="macro-cell" data-enc-row={0} data-enc-col={0} ref={el => { encoderCellRefs.current[0][0] = el }}>{renderMacroContent(layerData.leftEncoderTurn[0])}</div>
-          <div className="macro-cell" data-enc-row={0} data-enc-col={1} ref={el => { encoderCellRefs.current[0][1] = el }}>{renderMacroContent(layerData.leftEncoderTurn[1])}</div>
-          <div className="macro-cell" data-enc-row={0} data-enc-col={2} ref={el => { encoderCellRefs.current[0][2] = el }}>{renderMacroContent(layerData.leftEncoderPress)}</div>
+          <div className="macro-cell" data-enc-row={0} data-enc-col={0} ref={el => { encoderCellRefs.current[0][0] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(encoderLed[0][0])} />
+            {renderMacroContent(layerData.leftEncoderTurn[0])}
+          </div>
+          <div className="macro-cell" data-enc-row={0} data-enc-col={1} ref={el => { encoderCellRefs.current[0][1] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(encoderLed[0][1])} />
+            {renderMacroContent(layerData.leftEncoderTurn[1])}
+          </div>
+          <div className="macro-cell" data-enc-row={0} data-enc-col={2} ref={el => { encoderCellRefs.current[0][2] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(isEncoderPressed(0))} />
+            {renderMacroContent(layerData.leftEncoderPress)}
+          </div>
           {/* Right Encoder (row 1) */}
           <div className="macro-cell-knob">
             <span className="has-text-info" style={{ fontSize: '14px', fontWeight: 'bold' }}>Right</span>
           </div>
-          <div className="macro-cell" data-enc-row={1} data-enc-col={0} ref={el => { encoderCellRefs.current[1][0] = el }}>{renderMacroContent(layerData.rightEncoderTurn[0])}</div>
-          <div className="macro-cell" data-enc-row={1} data-enc-col={1} ref={el => { encoderCellRefs.current[1][1] = el }}>{renderMacroContent(layerData.rightEncoderTurn[1])}</div>
-          <div className="macro-cell" data-enc-row={1} data-enc-col={2} ref={el => { encoderCellRefs.current[1][2] = el }}>{renderMacroContent(layerData.rightEncoderPress)}</div>
+          <div className="macro-cell" data-enc-row={1} data-enc-col={0} ref={el => { encoderCellRefs.current[1][0] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(encoderLed[1][0])} />
+            {renderMacroContent(layerData.rightEncoderTurn[0])}
+          </div>
+          <div className="macro-cell" data-enc-row={1} data-enc-col={1} ref={el => { encoderCellRefs.current[1][1] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(encoderLed[1][1])} />
+            {renderMacroContent(layerData.rightEncoderTurn[1])}
+          </div>
+          <div className="macro-cell" data-enc-row={1} data-enc-col={2} ref={el => { encoderCellRefs.current[1][2] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(isEncoderPressed(1))} />
+            {renderMacroContent(layerData.rightEncoderPress)}
+          </div>
           {/* Big Encoder (row 2) */}
           <div className="macro-cell-knob">
             <span className="has-text-warning" style={{ fontSize: '14px', fontWeight: 'bold' }}>Big</span>
           </div>
-          <div className="macro-cell" data-enc-row={2} data-enc-col={0} ref={el => { encoderCellRefs.current[2][0] = el }}>{renderMacroContent(layerData.bigEncoderTurn[0])}</div>
-          <div className="macro-cell" data-enc-row={2} data-enc-col={1} ref={el => { encoderCellRefs.current[2][1] = el }}>{renderMacroContent(layerData.bigEncoderTurn[1])}</div>
-          <div className="macro-cell" data-enc-row={2} data-enc-col={2} ref={el => { encoderCellRefs.current[2][2] = el }}>{renderMacroContent(layerData.bigEncoderPress)}</div>
+          <div className="macro-cell" data-enc-row={2} data-enc-col={0} ref={el => { encoderCellRefs.current[2][0] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(encoderLed[2][0])} />
+            {renderMacroContent(layerData.bigEncoderTurn[0])}
+          </div>
+          <div className="macro-cell" data-enc-row={2} data-enc-col={1} ref={el => { encoderCellRefs.current[2][1] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(encoderLed[2][1])} />
+            {renderMacroContent(layerData.bigEncoderTurn[1])}
+          </div>
+          <div className="macro-cell" data-enc-row={2} data-enc-col={2} ref={el => { encoderCellRefs.current[2][2] = el }} style={{ position: 'relative' }}>
+            <div style={ledStyle(isEncoderPressed(2))} />
+            {renderMacroContent(layerData.bigEncoderPress)}
+          </div>
         </div>
       </div>
     </div>
