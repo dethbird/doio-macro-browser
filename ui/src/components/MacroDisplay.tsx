@@ -8,6 +8,7 @@ interface MacroDisplayProps {
   profileJson: unknown
   currentLayer: number
   profileId: number | null
+  pressedKey: { row: number; col: number } | null
 }
 
 // Layer index mapping for DOIO KB16
@@ -17,6 +18,21 @@ const BUTTON_INDICES = [0, 1, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 17, 18]
 const LEFT_ENCODER_PRESS_INDEX = 4
 const RIGHT_ENCODER_PRESS_INDEX = 9
 const BIG_ENCODER_PRESS_INDEX = 14
+
+// Map row,col from firmware to button index (0-15 for the 4x4 grid)
+// KB16 matrix layout - adjust based on your firmware's matrix
+const rowColToButtonIndex = (row: number, col: number): number | null => {
+  // This mapping depends on your keyboard's matrix
+  // For KB16 rev2, the matrix is typically:
+  // Row 0: cols 0-3 = buttons 0-3
+  // Row 1: cols 0-3 = buttons 4-7
+  // Row 2: cols 0-3 = buttons 8-11
+  // Row 3: cols 0-3 = buttons 12-15
+  if (row >= 0 && row <= 3 && col >= 0 && col <= 3) {
+    return row * 4 + col
+  }
+  return null
+}
 
 interface LayerData {
   buttons: string[]
@@ -28,12 +44,15 @@ interface LayerData {
   bigEncoderTurn: string[]
 }
 
-function MacroDisplay({ profileJson, currentLayer, profileId }: MacroDisplayProps) {
+function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey }: MacroDisplayProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
   const [displayedLayer, setDisplayedLayer] = useState(currentLayer)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const buttonsContainerRef = useRef<HTMLDivElement>(null)
   const encodersContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Calculate which button index is currently pressed
+  const pressedButtonIndex = pressedKey ? rowColToButtonIndex(pressedKey.row, pressedKey.col) : null
 
   // Debounce layer changes - wait 350ms before updating display
   useEffect(() => {
@@ -196,7 +215,15 @@ function MacroDisplay({ profileJson, currentLayer, profileId }: MacroDisplayProp
           gap: '4px'
         }}>
           {layerData.buttons.map((macro, idx) => (
-              <div key={idx} className="macro-cell">
+              <div 
+                key={idx} 
+                className="macro-cell"
+                style={pressedButtonIndex === idx ? { 
+                  backgroundColor: '#ff6b6b',
+                  transform: 'scale(0.95)',
+                  transition: 'all 0.1s ease'
+                } : undefined}
+              >
                 {renderMacroContent(macro)}
               </div>
             ))}

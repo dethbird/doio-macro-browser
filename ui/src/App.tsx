@@ -35,12 +35,22 @@ function App() {
     }
     return saved === null ? true : saved === 'true'
   })
+  const [pressedKey, setPressedKey] = useState<{ row: number; col: number } | null>(null)
 
   // WebHID keyboard connection for layer sync
-  const { isConnected, isSupported, connect, disconnect, error: hidError, sendLayerSwitch } = useKeyboardHID((layer) => {
-    setCurrentLayer(layer)
-    localStorage.setItem('currentLayer', String(layer))
-  })
+  const { isConnected, isSupported, connect, disconnect, error: hidError, sendLayerSwitch } = useKeyboardHID(
+    (layer) => {
+      setCurrentLayer(layer)
+      localStorage.setItem('currentLayer', String(layer))
+    },
+    (event) => {
+      if (event.pressed) {
+        setPressedKey({ row: event.row, col: event.col })
+      } else {
+        setPressedKey(null)
+      }
+    }
+  )
 
   // Fetch applications and restore selection from localStorage
   useEffect(() => {
@@ -386,6 +396,7 @@ function App() {
             profileJson={profileJson} 
             currentLayer={currentLayer}
             profileId={selectedProfile?.id ?? null}
+            pressedKey={pressedKey}
           />
         )}
       </div>
