@@ -337,23 +337,29 @@ function App() {
               >
                 ← Prev
               </button>
-              <span className="has-text-light mx-3">
-                {getLayerName(currentLayer)} ({currentLayer + 1} of {layerCount})
-              </span>
               <button 
-                className="button is-small is-dark ml-2"
+                className="button is-small is-dark"
                 onClick={handleNextLayer}
               >
                 Next →
               </button>
             </div>
-            <button 
-              className={`button is-small ${isEditMode ? 'is-warning' : 'is-info'}`}
-              onClick={() => setIsEditMode(!isEditMode)}
-              title={isEditMode ? 'View' : 'Edit Translations'}
-            >
-              <FontAwesomeIcon icon={isEditMode ? faEye : faPen} />
-            </button>
+            <div className="has-text-light has-text-centered" style={{ flex: 1 }}>
+              <span className="title is-4 has-text-light">{getLayerName(currentLayer)}</span>
+              <span className="has-text-grey-light ml-2" style={{ fontSize: '14px' }}>({currentLayer + 1} of {layerCount})</span>
+            </div>
+            <div className="is-flex is-align-items-center">
+              {parsedProfile?.name && (
+                <span className="has-text-grey-light mr-3" style={{ fontSize: '13px' }}>{parsedProfile.name}</span>
+              )}
+              <button 
+                className={`button is-small ${isEditMode ? 'is-warning' : 'is-info'}`}
+                onClick={() => setIsEditMode(!isEditMode)}
+                title={isEditMode ? 'View' : 'Edit Translations'}
+              >
+                <FontAwesomeIcon icon={isEditMode ? faEye : faPen} />
+              </button>
+            </div>
           </div>
         )}
         
@@ -380,7 +386,6 @@ function App() {
             profileJson={profileJson} 
             currentLayer={currentLayer}
             profileId={selectedProfile?.id ?? null}
-            layerName={getLayerName(currentLayer)}
           />
         )}
       </div>

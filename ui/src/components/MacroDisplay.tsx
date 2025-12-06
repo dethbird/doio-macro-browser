@@ -8,7 +8,6 @@ interface MacroDisplayProps {
   profileJson: unknown
   currentLayer: number
   profileId: number | null
-  layerName: string
 }
 
 // Layer index mapping for DOIO KB16
@@ -29,7 +28,7 @@ interface LayerData {
   bigEncoderTurn: string[]
 }
 
-function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: MacroDisplayProps) {
+function MacroDisplay({ profileJson, currentLayer, profileId }: MacroDisplayProps) {
   const [translations, setTranslations] = useState<Translation[]>([])
   const [displayedLayer, setDisplayedLayer] = useState(currentLayer)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -188,15 +187,6 @@ function MacroDisplay({ profileJson, currentLayer, profileId, layerName }: Macro
 
   return (
     <div className="box has-background-dark">
-      <div className="is-flex is-justify-content-space-between is-align-items-start mb-4">
-        <h3 className="title is-4 has-text-light mb-0">
-          {layerName}
-        </h3>
-        <span className="has-text-grey-light" style={{ fontSize: '12px' }}>
-          {parsedJson?.name}
-        </span>
-      </div>
-      
       {/* Buttons - 4x4 grid */}
       <div className="mb-5">
         <h4 className="title is-5 has-text-info mb-3">🎮 Buttons</h4>
