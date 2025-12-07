@@ -45,7 +45,23 @@ export default function LayerSelector({ currentLayer, onSelectLayer, sendKeyComb
               key={i}
               type="button"
               className={"layer-button macro-cell--has-led" + (isActive ? ' is-pressed' : '')}
-              onClick={(e) => { pressHold(e.currentTarget); onSelectLayer(i) }}
+              onClick={(e) => {
+                // immediate visual feedback
+                pressHold(e.currentTarget)
+                // request layer change
+                onSelectLayer(i)
+
+                // if available, send Alt+Tab shortly after the layer switch command
+                if (sendKeyCombo) {
+                  const MOD_ALT = 1 << 2
+                  const KC_TAB_HIGH = 0x00
+                  const KC_TAB_LOW = 0x2B
+                  // small delay to chain after the layer switch has been sent
+                  setTimeout(() => {
+                    sendKeyCombo(MOD_ALT, KC_TAB_HIGH, KC_TAB_LOW).catch(err => console.error('sendKeyCombo failed', err))
+                  }, 50)
+                }
+              }}
               aria-pressed={isActive}
               title={`Switch to layer ${i + 1}`}
             >
@@ -54,29 +70,6 @@ export default function LayerSelector({ currentLayer, onSelectLayer, sendKeyComb
             </button>
           )
         })}
-        {sendKeyCombo && (
-          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center' }}>
-            <button
-              type="button"
-              className="button is-dark is-small"
-              onClick={async (e) => {
-                // quick visual feedback
-                pressHold(e.currentTarget)
-                // MOD_ALT = bit2
-                const MOD_ALT = 1 << 2
-                const KC_TAB_HIGH = 0x00
-                const KC_TAB_LOW = 0x2B
-                try {
-                  await sendKeyCombo(MOD_ALT, KC_TAB_HIGH, KC_TAB_LOW)
-                } catch (err) {
-                  console.error('sendKeyCombo failed', err)
-                }
-              }}
-            >
-              Alt+Tab
-            </button>
-          </div>
-        )}
       </div>
     </div>
   )
