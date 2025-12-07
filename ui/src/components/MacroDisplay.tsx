@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useState, useRef } from 'react'
 import gsap from 'gsap'
+import { bounceElements } from '../utils/animations'
 import { humanize } from '../utils/humanize'
 import type { ViaProfile, Translation } from '../types'
 import '../theme.css'
@@ -111,13 +112,10 @@ function MacroDisplay({ profileJson, currentLayer, profileId, pressedKey, encode
     const buttonCells = buttonsContainerRef.current?.querySelectorAll('.macro-cell')
     const encoderCells = encodersContainerRef.current?.querySelectorAll('.macro-cell')
     const allCells = [...(buttonCells || []), ...(encoderCells || [])]
-    
+
     if (allCells.length > 0) {
-      // Quick scale down then bounce up
-      gsap.fromTo(allCells,
-        { scale: 0.9 },
-        { scale: 1, duration: 0.25, stagger: 0.015, ease: 'back.out(2)' }
-      )
+      // Use shared helper so animation behaviour is reusable
+      bounceElements(allCells)
     }
   }, [displayedLayer])
 

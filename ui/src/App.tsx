@@ -6,6 +6,7 @@ import MacroDisplay from './components/MacroDisplay'
 import MacroDisplayEdit from './components/MacroDisplayEdit'
 import { useKeyboardHID } from './hooks/useKeyboardHID'
 import type { Application, Profile, ViaProfile, LayerTranslation } from './types'
+import { pressHold, release } from './utils/animations'
 
 const MAX_LAYERS = 4
 const SWIPE_THRESHOLD = 50 // Minimum swipe distance in pixels
@@ -37,6 +38,8 @@ function App() {
   })
   const [pressedKey, setPressedKey] = useState<{ row: number; col: number } | null>(null)
   const [encoderEvent, setEncoderEvent] = useState<{ index: number; direction: 'cw' | 'ccw' } | null>(null)
+  const layerButtonsRef = useRef<HTMLDivElement | null>(null)
+  const prevLayerRef = useRef<number>(currentLayer)
 
   // WebHID keyboard connection for layer sync
   const { isConnected, isSupported, connect, disconnect, error: hidError, sendLayerSwitch } = useKeyboardHID(
@@ -211,6 +214,34 @@ function App() {
     }
   }, [isConnected, layerCount, sendLayerSwitch])
 
+  // Animate only the previously active and newly active buttons when layer changes.
+  useEffect(() => {
+    const container = layerButtonsRef.current
+    if (!container) return
+    const nodes = container.querySelectorAll('.layer-button')
+    const prev = prevLayerRef.current
+    const next = currentLayer
+
+    if (prev === next) return
+
+    const prevEl = nodes[prev] as Element | undefined
+    const nextEl = nodes[next] as Element | undefined
+
+    // Animate release of previous (remove pressed class and release animation)
+    if (prevEl) {
+      prevEl.classList.remove('is-pressed')
+      release(prevEl)
+    }
+
+    // Animate press of new active (add pressed class and press-hold animation)
+    if (nextEl) {
+      nextEl.classList.add('is-pressed')
+      pressHold(nextEl)
+    }
+
+    prevLayerRef.current = next
+  }, [currentLayer])
+
   // Keyboard navigation for layers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -356,7 +387,7 @@ function App() {
           <div className="mb-4 is-flex is-align-items-center is-justify-content-space-between">
             <div className="is-flex is-align-items-center">
               <div className="box has-background-dark layer-box">
-                <div className="layer-buttons">
+                <div className="layer-buttons" ref={layerButtonsRef}>
                   {[0,1,2,3].map(i => {
                     const isActive = currentLayer === i
                     return (
@@ -364,7 +395,11 @@ function App() {
                         key={i}
                         type="button"
                         className={"layer-button macro-cell--has-led" + (isActive ? ' is-pressed' : '')}
-                        onClick={() => handleSelectLayer(i)}
+                        onClick={(e) => {
+                          // quick feedback for click before state updates
+                          pressHold(e.currentTarget)
+                          handleSelectLayer(i)
+                        }}
                         aria-pressed={isActive}
                         title={`Switch to layer ${i+1}`}
                       >
