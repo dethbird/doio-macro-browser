@@ -361,7 +361,7 @@ function App() {
           <div className="is-flex is-align-items-center is-justify-content-space-between">
             <div />
             <div className="has-text-light" style={{ flex: 1 }}>
-              <span className="oled-screen title is-4 mb-2">{getLayerName(currentLayer)}</span>
+              <span className="oled-screen title is-4 mb-4">{getLayerName(currentLayer)}</span>
             </div>
             <div className="is-flex is-align-items-center">
               {parsedProfile?.name && (
