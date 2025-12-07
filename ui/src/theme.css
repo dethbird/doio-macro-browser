@@ -17,6 +17,17 @@
   --color-oled-blue: #00c0ff;
 }
 
+/* Local font for OLED layer name (place DOTMATRI.TTF in src/assets/fonts/) */
+@font-face {
+  font-family: 'DotMatri';
+  /* Use absolute path so built output resolves to /assets/fonts/DOTMATRI.TTF
+     Place DOTMATRI.TTF in `ui/public/fonts/DOTMATRI.TTF` so Vite copies it into the build output. */
+  src: url('/assets/fonts/DOTMATRI.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Ensure full viewport coverage */
 html, body, #root {
   min-height: 100vh;
@@ -500,18 +511,25 @@ html, body, #root {
 .oled-screen {
   display: inline-block;
   padding: 8px 12px;
-  background: linear-gradient(180deg, #020202 0%, #040404 100%);
+  /* Slightly brighter OLED background for better readability */
+  background: linear-gradient(180deg, #071017 0%, #0b1216 100%);
   color: var(--color-oled-blue);
   font-weight: 600;
   border-radius: 6px;
   /* darker border on top and right, lighter on left and bottom for indented look */
-  border-top: 2px solid rgba(0,0,0,0.7);
-  border-right: 2px solid rgba(0,0,0,0.7);
-  border-bottom: 2px solid rgba(255,255,255,0.04);
-  border-left: 2px solid rgba(255,255,255,0.04);
-  box-shadow: inset 0 6px 10px rgba(0,0,0,0.6), inset -6px -6px 10px rgba(255,255,255,0.02);
-  text-shadow: 0 0 8px rgba(0,192,255,0.25), 0 0 2px rgba(0,160,255,0.4);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  /* lighten borders a bit while keeping indented effect */
+  border-top: 2px solid rgba(0,0,0,0.35);
+  border-right: 2px solid rgba(0,0,0,0.35);
+  border-bottom: 2px solid rgba(255,255,255,0.08);
+  border-left: 2px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 6px 10px rgba(0,0,0,0.45), inset -6px -6px 10px rgba(255,255,255,0.06);
+  /* stronger, multi-layer glow for OLED text */
+  text-shadow:
+    0 0 18px rgba(0,200,255,0.48),
+    0 0 10px rgba(0,170,255,0.62),
+    0 0 4px rgba(0,140,255,0.9);
+  filter: drop-shadow(0 0 10px rgba(0,200,255,0.18));
+  font-family: 'DotMatri', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
   font-size: 14px;
   width: 50%;
 }
