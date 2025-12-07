@@ -443,3 +443,49 @@ html, body, #root {
 .delete:hover {
   background-color: var(--color-muted) !important;
 }
+
+/* Layer quick-select circular buttons (small button cells) */
+.layer-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.layer-button {
+  /* Constrain the quick-select layer buttons to a compact circular size */
+  width: 42px;
+  height: 42px;
+  max-width: 42px;
+  max-height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 3px 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #151515 100%);
+  border-top: 1px solid #444;
+  border-right: 1px solid #3a3a3a;
+  border-bottom: 2px solid #0a0a0a;
+  border-left: 2px solid #0f0f0f;
+  box-shadow: -3px 4px 8px rgba(0, 0, 0, 0.5),
+              -1px 2px 4px rgba(0, 0, 0, 0.3),
+              inset 1px 1px 2px rgba(255, 255, 255, 0.05);
+  margin: 2px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.layer-button .macro-label { font-size: 12px; }
+.layer-button .macro-content { font-size: 13px; }
+.layer-button .macro-icon { max-height: 40px; max-width: 32px; }
+
+/* Slightly smaller LED for compact circular buttons */
+.layer-button .led { width: 9px; height: 9px; top: 6px; left: 6px; }
+
+/* Small helper to tweak the box that wraps layer quick-select buttons */
+.layer-box {
+  padding: 12px;
+}

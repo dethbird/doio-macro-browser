@@ -202,6 +202,15 @@ function App() {
     })
   }, [layerCount, isConnected, sendLayerSwitch])
 
+  const handleSelectLayer = useCallback((index: number) => {
+    const idx = Math.max(0, Math.min(index, layerCount - 1))
+    setCurrentLayer(idx)
+    localStorage.setItem('currentLayer', String(idx))
+    if (isConnected) {
+      sendLayerSwitch(idx)
+    }
+  }, [isConnected, layerCount, sendLayerSwitch])
+
   // Keyboard navigation for layers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -346,18 +355,26 @@ function App() {
         {profileJson !== null && (
           <div className="mb-4 is-flex is-align-items-center is-justify-content-space-between">
             <div className="is-flex is-align-items-center">
-              <button 
-                className="button is-small is-dark mr-2"
-                onClick={handlePrevLayer}
-              >
-                ← Prev
-              </button>
-              <button 
-                className="button is-small is-dark"
-                onClick={handleNextLayer}
-              >
-                Next →
-              </button>
+              <div className="box has-background-dark layer-box">
+                <div className="layer-buttons">
+                  {[0,1,2,3].map(i => {
+                    const isActive = currentLayer === i
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        className={"layer-button macro-cell--has-led" + (isActive ? ' is-pressed' : '')}
+                        onClick={() => handleSelectLayer(i)}
+                        aria-pressed={isActive}
+                        title={`Switch to layer ${i+1}`}
+                      >
+                        <div className={"led " + (isActive ? 'on' : 'off')} />
+                        <div className="has-text-light macro-content">{String(i+1)}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
             <div className="has-text-light has-text-centered" style={{ flex: 1 }}>
               <span className="title is-4 has-text-light">{getLayerName(currentLayer)}</span>
