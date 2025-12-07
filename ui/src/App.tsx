@@ -42,7 +42,7 @@ function App() {
 
 
   // WebHID keyboard connection for layer sync
-  const { isConnected, isSupported, connect, disconnect, error: hidError, sendLayerSwitch } = useKeyboardHID(
+  const { isConnected, isSupported, connect, disconnect, error: hidError, sendLayerSwitch, sendKeyCombo } = useKeyboardHID(
     (layer) => {
       setCurrentLayer(layer)
       localStorage.setItem('currentLayer', String(layer))
@@ -380,8 +380,8 @@ function App() {
         )}
         
         <div className="is-flex">
-          <div style={{ minWidth: '60px' }}>
-            <LayerSelector currentLayer={currentLayer} onSelectLayer={handleSelectLayer} />
+            <div style={{ minWidth: '60px' }}>
+            <LayerSelector currentLayer={currentLayer} onSelectLayer={handleSelectLayer} sendKeyCombo={sendKeyCombo} />
           </div>
           <div style={{ flex: 1, marginLeft: 12 }}>
             {isEditMode ? (

@@ -15,6 +15,7 @@ const MSG_KEYPRESS = 0xCC         // Keyboard -> UI: key pressed
 const MSG_KEYRELEASE = 0xCD       // Keyboard -> UI: key released
 const MSG_ENCODER_CW = 0xCE       // Keyboard -> UI: encoder clockwise
 const MSG_ENCODER_CCW = 0xCF      // Keyboard -> UI: encoder counter-clockwise
+const MSG_KEY_COMBO = 0xDE        // UI -> Keyboard: key combo (mods + keycode)
 
 interface KeypressEvent {
   row: number
@@ -31,6 +32,7 @@ interface UseKeyboardHIDReturn {
   connect: () => Promise<void>
   disconnect: () => void
   sendLayerSwitch: (layer: number) => Promise<void>
+  sendKeyCombo: (mods: number, keyHigh: number, keyLow: number) => Promise<void>
 }
 
 interface EncoderEvent {
@@ -83,6 +85,24 @@ export function useKeyboardHID(
       await device.sendReport(0, data)
     } catch (err) {
       console.error('Failed to send layer switch:', err)
+    }
+  }, [])
+
+  // Send a key combo command to the keyboard (mods + 16-bit keycode)
+  const sendKeyCombo = useCallback(async (mods: number, keyHigh: number, keyLow: number) => {
+    const device = deviceRef.current
+    if (!device || !device.opened) return
+
+    try {
+      const data = new Uint8Array(32)
+      data[0] = MSG_KEY_COMBO
+      data[1] = mods & 0xFF
+      data[2] = keyHigh & 0xFF
+      data[3] = keyLow & 0xFF
+
+      await device.sendReport(0, data)
+    } catch (err) {
+      console.error('Failed to send key combo:', err)
     }
   }, [])
 
@@ -249,6 +269,7 @@ export function useKeyboardHID(
     error,
     connect,
     disconnect,
-    sendLayerSwitch
+    sendLayerSwitch,
+    sendKeyCombo
   }
 }

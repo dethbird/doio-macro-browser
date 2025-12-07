@@ -4,9 +4,10 @@ import { pressHold, release } from '../utils/animations'
 interface LayerSelectorProps {
   currentLayer: number
   onSelectLayer: (index: number) => void
+  sendKeyCombo?: (mods: number, keyHigh: number, keyLow: number) => Promise<void>
 }
 
-export default function LayerSelector({ currentLayer, onSelectLayer }: LayerSelectorProps) {
+export default function LayerSelector({ currentLayer, onSelectLayer, sendKeyCombo }: LayerSelectorProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const prevRef = useRef<number>(currentLayer)
 
@@ -53,6 +54,29 @@ export default function LayerSelector({ currentLayer, onSelectLayer }: LayerSele
             </button>
           )
         })}
+        {sendKeyCombo && (
+          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center' }}>
+            <button
+              type="button"
+              className="button is-dark is-small"
+              onClick={async (e) => {
+                // quick visual feedback
+                pressHold(e.currentTarget)
+                // MOD_ALT = bit2
+                const MOD_ALT = 1 << 2
+                const KC_TAB_HIGH = 0x00
+                const KC_TAB_LOW = 0x2B
+                try {
+                  await sendKeyCombo(MOD_ALT, KC_TAB_HIGH, KC_TAB_LOW)
+                } catch (err) {
+                  console.error('sendKeyCombo failed', err)
+                }
+              }}
+            >
+              Alt+Tab
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
