@@ -358,10 +358,10 @@ function App() {
         )}
         
         {profileJson !== null && (
-          <div className="mb-4 is-flex is-align-items-center is-justify-content-space-between">
+          <div className="is-flex is-align-items-center is-justify-content-space-between">
             <div />
-            <div className="has-text-light has-text-centered" style={{ flex: 1 }}>
-              <span className="title is-4 has-text-light">{getLayerName(currentLayer)}</span>
+            <div className="has-text-light" style={{ flex: 1 }}>
+              <span className="oled-screen title is-4">{getLayerName(currentLayer)}</span>
               <span className="has-text-grey-light ml-2" style={{ fontSize: '14px' }}>({currentLayer + 1} of {layerCount})</span>
             </div>
             <div className="is-flex is-align-items-center">

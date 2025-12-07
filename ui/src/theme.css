@@ -14,6 +14,7 @@
   --color-pink: #ff1493;
   --color-white: #ffffff;
   --color-error: #ff6b6b;
+  --color-oled-blue: #00c0ff;
 }
 
 /* Ensure full viewport coverage */
@@ -493,4 +494,24 @@ html, body, #root {
 /* Small helper to tweak the box that wraps layer quick-select buttons */
 .layer-box {
   padding: 12px;
+}
+
+/* OLED-style indented screen for layer name translations */
+.oled-screen {
+  display: inline-block;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #020202 0%, #040404 100%);
+  color: var(--color-oled-blue);
+  font-weight: 600;
+  border-radius: 6px;
+  /* darker border on top and right, lighter on left and bottom for indented look */
+  border-top: 2px solid rgba(0,0,0,0.7);
+  border-right: 2px solid rgba(0,0,0,0.7);
+  border-bottom: 2px solid rgba(255,255,255,0.04);
+  border-left: 2px solid rgba(255,255,255,0.04);
+  box-shadow: inset 0 6px 10px rgba(0,0,0,0.6), inset -6px -6px 10px rgba(255,255,255,0.02);
+  text-shadow: 0 0 8px rgba(0,192,255,0.25), 0 0 2px rgba(0,160,255,0.4);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-size: 14px;
+  width: 50%;
 }
