@@ -452,15 +452,20 @@ html, body, #root {
   align-items: center;
 }
 
+.layer-buttons.vertical {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .layer-button {
   /* Constrain the quick-select layer buttons to a compact circular size */
-  width: 42px;
-  height: 42px;
-  max-width: 42px;
-  max-height: 42px;
-  min-width: 42px;
-  min-height: 42px;
-  padding: 3px 4px;
+  width: 64px;
+  height: 64px;
+  max-width: 64px;
+  max-height: 64px;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 6px 8px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -483,7 +488,7 @@ html, body, #root {
 .layer-button .macro-icon { max-height: 40px; max-width: 32px; }
 
 /* Slightly smaller LED for compact circular buttons */
-.layer-button .led { width: 9px; height: 9px; top: 6px; left: 6px; }
+.layer-button .led { width: 10px; height: 10px; top: 12px; left: 12px; }
 
 /* Small helper to tweak the box that wraps layer quick-select buttons */
 .layer-box {
